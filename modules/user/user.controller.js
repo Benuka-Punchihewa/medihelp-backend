@@ -5,13 +5,14 @@ const { startSession } = require("mongoose");
 const UserService = require("./user.service");
 const UserUtil = require("./user.util");
 const AuthService = require("../auth/auth.service");
+const BadRequestError = require("../error/error.classes/BadRequestError");
 
 const createUser = async (req, res) => {
   const { password } = req.body;
   const user = new User(req.body);
 
   // validate password
-  if (!password) throw new Error();
+  if (!password) throw new BadRequestError("Password cannot be empty!");
 
   // construct auth
   const auth = new Auth();

@@ -1,9 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./util/dbConection");
-const constants = require("./util/constants");
+const commonConfig = require("./modules/common/common.config");
+const constants = require("./constants");
 require("dotenv").config();
 require("express-async-errors");
+const errorHandlerMiddleware = require("./modules/error/error.middleware");
+const NotFoundError = require("./modules/error/error.classes/NotFoundError");
 
 // import routes
 const userRoutes = require("./modules/user/user.route");
@@ -18,15 +20,18 @@ app.use(constants.API.PREFIX.concat("/users"), userRoutes);
 
 // not found route
 app.use((req, res, next) => {
-  throw new NotFoundError("API Endpoint Not Found!");
+  throw new NotFoundError("API endpoint not found!");
 });
+
+// error handler middleware
+app.use(errorHandlerMiddleware);
 
 const start = async () => {
   const port = process.env.PORT || 5001;
   try {
-    await connectDB();
+    await commonConfig.connectDB();
     app.listen(port, () => {
-      console.log(`SERVER IS LISTENING ON PORT ${port}`);
+      console.log(`SERVER IS LISTENING ON PORT ${port}...`);
     });
   } catch (err) {
     console.error(err);
