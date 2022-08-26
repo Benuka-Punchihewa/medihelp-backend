@@ -4,4 +4,9 @@ const save = async (user, session) => {
   return await user.save({ session });
 };
 
-module.exports = { save };
+const findById = async (id, session) => {
+  if (session) return await User.findById(id).session(session);
+  return await User.findById(id);
+};
+
+module.exports = { save, findById };
