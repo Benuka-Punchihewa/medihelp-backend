@@ -1,7 +1,16 @@
 const mongoose = require("mongoose");
 const constants = require("../../constants");
 
-const userSchema = new mongoose.Schema(
+const OwnedPharmacySchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    unique: true,
+    required: true,
+    ref: "Pharmacy",
+  },
+});
+
+const UserSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
@@ -47,7 +56,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      required: [true, "Advertisement level is required!"],
+      required: [true, "User role is required!"],
       enum: {
         values: [
           constants.USER.ROLES.CUSTOMER,
@@ -57,6 +66,10 @@ const userSchema = new mongoose.Schema(
         message: "Valid role is required!",
       },
     },
+    pharmacies: {
+      type: [OwnedPharmacySchema],
+      default: [],
+    },
   },
   {
     versionKey: false,
@@ -64,4 +77,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", UserSchema);

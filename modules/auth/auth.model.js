@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const authSchema = mongoose.Schema(
+const AuthSchema = mongoose.Schema(
   {
     _id: {
       type: String,
@@ -22,4 +22,4 @@ const authSchema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Auth", authSchema);
+module.exports = mongoose.model("Auth", AuthSchema);

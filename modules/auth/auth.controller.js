@@ -30,7 +30,7 @@ const login = async (req, res) => {
 
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: "Login successfull!", token });
+    .json({ message: "Login successfull!", user: dbPopulatedAuth.user, token });
 };
 
 module.exports = { login };

@@ -7,6 +7,8 @@ const signToken = (user) => {
   const tokenBody = {
     _id: user._id,
     email: user.email,
+    role: user.role,
+    pharmacies: user.pharmacies,
   };
 
   return jwt.sign(tokenBody, String(process.env.JWT_SECRET), {
