@@ -29,7 +29,7 @@ const login = async (req, res) => {
   const token = authUtil.signToken(dbPopulatedAuth.user);
 
   return res
-    .status(StatusCodes.CREATED)
+    .status(StatusCodes.OK)
     .json({ message: "Login successfull!", user: dbPopulatedAuth.user, token });
 };
 

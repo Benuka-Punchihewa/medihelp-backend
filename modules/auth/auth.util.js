@@ -16,4 +16,10 @@ const signToken = (user) => {
   });
 };
 
-module.exports = { signToken };
+const extractToken = (bearerToken) => {
+  const bearerArr = bearerToken.split(" ");
+  if (bearerArr.length !== 2) return null;
+  return bearerArr[1];
+};
+
+module.exports = { signToken, extractToken };
