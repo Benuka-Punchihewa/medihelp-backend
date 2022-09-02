@@ -11,16 +11,19 @@ const NotFoundError = require("./modules/error/error.classes/NotFoundError");
 const userRoutes = require("./modules/user/user.route");
 const authRoutes = require("./modules/auth/auth.route");
 const pharamacyRoutes = require("./modules/pharmacy/pharmacy.route");
+const orderRoutes = require("./modules/order/order.route");
 
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // define routes
 app.use(constants.API.PREFIX.concat("/users"), userRoutes);
 app.use(constants.API.PREFIX.concat("/auth"), authRoutes);
-app.use(constants.API.PREFIX.concat("/pharmacy"), pharamacyRoutes);
+app.use(constants.API.PREFIX.concat("/pharmacies"), pharamacyRoutes);
+app.use(constants.API.PREFIX.concat("/orders"), orderRoutes);
 
 // not found route
 app.use((req, res, next) => {

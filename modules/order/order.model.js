@@ -29,6 +29,7 @@ const OrderSchema = new mongoose.Schema(
       _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Pharmacy",
+        required: [true, "Pharmacy ID is required!"],
       },
     },
     status: {
@@ -49,11 +50,12 @@ const OrderSchema = new mongoose.Schema(
       _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+        required: [true, "Customer ID is required!"],
       },
     },
     prescriptionSheet: {
       type: String,
-      required: [true, "Prescription sheetis required!"],
+      required: [true, "Prescription sheet is required!"],
     },
     medicines: {
       type: [OrderedMedicineSchema],
@@ -110,6 +112,7 @@ const OrderSchema = new mongoose.Schema(
       },
       status: {
         type: Boolean,
+        required: [true, "Payment status is required!"],
         default: false,
       },
       subtotal: {
