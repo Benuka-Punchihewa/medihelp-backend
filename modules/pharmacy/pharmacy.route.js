@@ -7,7 +7,7 @@ const pharmacyController = require("./pharamacy.controller");
 
 router.post(
   "/",
-  authMiddleware.authorize(constants.USER.ROLES.PHARMACY_OWNER),
+  authMiddleware.authorize([constants.USER.ROLES.PHARMACY_OWNER]),
   pharmacyController.createPharmacy
 );
 

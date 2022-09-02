@@ -11,6 +11,7 @@ const PharmacySchema = mongoose.Schema(
       type: String,
       maxlength: [50, "Pharmacy name should not exceed 50 characters!"],
       required: [true, "Pharmacy registration number is required!"],
+      unique: true,
     },
     address: {
       type: String,
