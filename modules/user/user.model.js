@@ -4,9 +4,10 @@ const constants = require("../../constants");
 const OwnedPharmacySchema = new mongoose.Schema({
   _id: {
     type: mongoose.Schema.Types.ObjectId,
-    unique: true,
-    required: true,
     ref: "Pharmacy",
+  },
+  name: {
+    type: String,
   },
 });
 

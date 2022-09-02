@@ -46,7 +46,7 @@ const createUser = async (req, res) => {
 
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: "User created successfully!", user: dbUser });
+    .json({ message: "User created successfully!", obj: dbUser });
 };
 
 module.exports = { createUser };
