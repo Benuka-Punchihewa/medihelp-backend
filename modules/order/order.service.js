@@ -9,4 +9,12 @@ const findById = async (id, session) => {
   return await Order.findById(id);
 };
 
-module.exports = { save, findById };
+const getOrderCountOfTheCurrentDayByPharamcy = async (pharmacyId, session) => {
+  const today = new Date().toISOString().split("T")[0] + "T00:00:00.000";
+  return await Order.find(
+    { "pharamcy._id": pharmacyId, createdAt: { $gte: today } },
+    { session }
+  ).countDocuments();
+};
+
+module.exports = { save, findById, getOrderCountOfTheCurrentDayByPharamcy };
