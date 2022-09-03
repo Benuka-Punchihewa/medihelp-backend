@@ -64,7 +64,7 @@ const OrderSchema = new mongoose.Schema(
     patient: {
       name: {
         type: String,
-        required: [true, "name is required!"],
+        required: [true, "Name is required!"],
         maxlength: [100, " Name should not exceed 100 characters!"],
       },
       NIC: {

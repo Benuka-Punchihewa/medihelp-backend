@@ -9,6 +9,7 @@ const { startSession } = require("mongoose");
 const commonService = require("../common/common.service");
 const { v4: UUIDV4 } = require("uuid");
 const pharmacyUtil = require("../pharmacy/pharmacy.util");
+const commonUtil = require("../common/common.util");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -36,13 +37,6 @@ const createOrder = async (req, res) => {
   order.pharmacy._id = dbPharmacy._id;
   order.status = constants.ORDER.STATUS.PENDING;
 
-  // upload the image to firebase and get the url
-  const filename = `order_${dbPharmacy.registrationNumber}_${UUIDV4()}`;
-  order.prescriptionSheet = await commonService.uploadToFirebase(
-    req.file,
-    filename
-  );
-
   // start mongoose default session
   const session = await startSession();
 
@@ -57,10 +51,18 @@ const createOrder = async (req, res) => {
         session
       );
 
-    order._id = `Order_${dbPharmacy.registrationNumber}_${orderCount + 1}`;
+    order._id = `Order_${dbPharmacy.registrationNumber}_${
+      new Date().toISOString().split("T")[0]
+    }_${orderCount + 1}`;
+
+    // generate firebase storage url
+    order.prescriptionSheet = commonUtil.generateFirebaseStorageURL(order._id);
 
     // save order
     await OrderService.save(order, session);
+
+    // upload the image to firebase
+    await commonService.uploadToFirebase(req.file, order._id);
 
     // commit transaction
     await session.commitTransaction();
