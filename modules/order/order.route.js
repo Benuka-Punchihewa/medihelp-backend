@@ -6,6 +6,7 @@ const commonMiddleware = require("../common/common.middleware");
 
 const orderController = require("./order.controller");
 
+// create order
 router.post(
   "/",
   commonMiddleware.multerUploader.single("image"),
@@ -15,6 +16,17 @@ router.post(
     constants.USER.ROLES.ADMIN,
   ]),
   orderController.createOrder
+);
+
+// get orders by pharmacy id
+router.get(
+  "/pharmacies/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  commonMiddleware.paginate,
+  orderController.getOrdersByPharmacy
 );
 
 module.exports = router;

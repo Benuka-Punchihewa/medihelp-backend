@@ -8,6 +8,7 @@ const OrderService = require("./order.service");
 const { startSession } = require("mongoose");
 const commonService = require("../common/common.service");
 const { v4: UUIDV4 } = require("uuid");
+const pharmacyUtil = require("../pharmacy/pharmacy.util");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -32,7 +33,7 @@ const createOrder = async (req, res) => {
   const order = new Order(parsedBody);
   order.payment.status = false;
   order.customer._id = auth._id;
-  order.pharamcy._id = dbPharmacy._id;
+  order.pharmacy._id = dbPharmacy._id;
   order.status = constants.ORDER.STATUS.PENDING;
 
   // upload the image to firebase and get the url
@@ -52,7 +53,7 @@ const createOrder = async (req, res) => {
     // construct order id
     const orderCount =
       await OrderService.getOrderCountOfTheCurrentDayByPharamcy(
-        order.pharamcy._id,
+        order.pharmacy._id,
         session
       );
 
@@ -77,4 +78,21 @@ const createOrder = async (req, res) => {
     .json({ message: "Order created successfully!", obj: order });
 };
 
-module.exports = { createOrder };
+const getOrdersByPharmacy = async (req, res) => {
+  const { auth, pagable } = req.body;
+  const { pharmacyId } = req.params;
+
+  // validate pharmacy
+  const dbPharamacy = await PharmacyService.findById(pharmacyId);
+  if (!dbPharamacy) throw new NotFoundError("Pharmacy not found!");
+
+  // validate authority
+  pharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
+
+  const queryObj = { "pharmacy._id": pharmacyId };
+  const result = await OrderService.getOrders(queryObj, pagable);
+
+  return res.status(StatusCodes.OK).json(result);
+};
+
+module.exports = { createOrder, getOrdersByPharmacy };

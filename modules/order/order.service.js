@@ -17,4 +17,27 @@ const getOrderCountOfTheCurrentDayByPharamcy = async (pharmacyId, session) => {
   ).countDocuments();
 };
 
-module.exports = { save, findById, getOrderCountOfTheCurrentDayByPharamcy };
+const getOrders = async (queryObj, pagableObj) => {
+  const { page, limit, orderBy } = pagableObj;
+
+  const content = await Order.find(queryObj)
+    .limit(limit * 1)
+    .skip((page - 1) * limit)
+    .sort({ createdAt: orderBy })
+    .exec();
+
+  const totalElements = await Order.countDocuments(queryObj);
+
+  return {
+    content,
+    totalElements,
+    totalPages: Math.ceil(totalElements / limit),
+  };
+};
+
+module.exports = {
+  save,
+  findById,
+  getOrderCountOfTheCurrentDayByPharamcy,
+  getOrders,
+};

@@ -25,7 +25,7 @@ const OrderSchema = new mongoose.Schema(
     _id: {
       type: String,
     },
-    pharamcy: {
+    pharmacy: {
       _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Pharmacy",
