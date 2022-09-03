@@ -36,7 +36,7 @@ const createOrder = async (req, res) => {
   order.status = constants.ORDER.STATUS.PENDING;
 
   // upload the image to firebase and get the url
-  const filename = `order_${dbPharmacy.registrationNumber}_${UUIDV4() + 1}`;
+  const filename = `order_${dbPharmacy.registrationNumber}_${UUIDV4()}`;
   order.prescriptionSheet = await commonService.uploadToFirebase(
     req.file,
     filename
