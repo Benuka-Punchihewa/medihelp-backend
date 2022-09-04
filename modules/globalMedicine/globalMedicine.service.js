@@ -4,4 +4,9 @@ const save = async (globalMedicine, session) => {
   return await globalMedicine.save({ session });
 };
 
-module.exports = { save };
+const findById = async (id, session) => {
+  if (session) return await GlobalMedicine.findById(id).session(session);
+  return await GlobalMedicine.findById(id);
+};
+
+module.exports = { save, findById };

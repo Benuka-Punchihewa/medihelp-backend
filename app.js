@@ -13,6 +13,7 @@ const authRoutes = require("./modules/auth/auth.route");
 const pharamacyRoutes = require("./modules/pharmacy/pharmacy.route");
 const orderRoutes = require("./modules/order/order.route");
 const globalMedicineRoutes = require("./modules/globalMedicine/globalMedicine.route");
+const medicineRoutes = require("./modules/medicine/medicine.route");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(constants.API.PREFIX.concat("/auth"), authRoutes);
 app.use(constants.API.PREFIX.concat("/pharmacies"), pharamacyRoutes);
 app.use(constants.API.PREFIX.concat("/orders"), orderRoutes);
 app.use(constants.API.PREFIX.concat("/global-medicines"), globalMedicineRoutes);
+app.use(constants.API.PREFIX.concat("/medicines"), medicineRoutes);
 
 // not found route
 app.use((req, res, next) => {
