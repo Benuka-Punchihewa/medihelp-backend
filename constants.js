@@ -24,6 +24,12 @@ const constants = {
       CASH_ON_DELIVERY: "cash_on_delivery",
     },
   },
+  MEDICINE: {
+    TYPE: {
+      PRESCRIPTION: "prescription",
+      NON_PRESCRIPTION: "non-prescription",
+    },
+  },
 };
 
 module.exports = constants;
