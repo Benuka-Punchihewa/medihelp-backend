@@ -9,4 +9,22 @@ const findById = async (id, session) => {
   return await GlobalMedicine.findById(id);
 };
 
-module.exports = { save, findById };
+const getGlobalMedicines = async (queryObj, pagableObj) => {
+  const { page, limit, orderBy } = pagableObj;
+
+  const content = await GlobalMedicine.find(queryObj)
+    .limit(limit * 1)
+    .skip((page - 1) * limit)
+    .sort({ createdAt: orderBy })
+    .exec();
+
+  const totalElements = await GlobalMedicine.countDocuments(queryObj);
+
+  return {
+    content,
+    totalElements,
+    totalPages: Math.ceil(totalElements / limit),
+  };
+};
+
+module.exports = { save, findById, getGlobalMedicines };

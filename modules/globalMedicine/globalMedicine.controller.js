@@ -13,4 +13,12 @@ const createGlobalMedincine = async (req, res) => {
   });
 };
 
-module.exports = { createGlobalMedincine };
+const getGlobalMedicines = async (req, res) => {
+  const { pagable } = req.body;
+
+  const result = await GlobalMedicineService.getGlobalMedicines({}, pagable);
+
+  return res.status(StatusCodes.OK).json(result);
+};
+
+module.exports = { createGlobalMedincine, getGlobalMedicines };
