@@ -13,4 +13,16 @@ router.post(
   globalMedicineController.createGlobalMedincine
 );
 
+//get global medicines
+router.get(
+  "/globale-medicines",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  commonMiddleware.paginate,
+  globalMedicineController.getGlobalMedicines
+);
+
 module.exports = router;
