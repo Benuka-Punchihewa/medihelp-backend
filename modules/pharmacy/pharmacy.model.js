@@ -56,7 +56,6 @@ const PharmacySchema = mongoose.Schema(
     owner: {
       _id: {
         type: mongoose.Schema.Types.ObjectId,
-        unique: true,
         required: true,
         ref: "User",
       },
