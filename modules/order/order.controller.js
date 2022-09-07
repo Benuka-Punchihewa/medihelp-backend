@@ -7,9 +7,11 @@ const constants = require("../../constants");
 const OrderService = require("./order.service");
 const { startSession } = require("mongoose");
 const commonService = require("../common/common.service");
-const { v4: UUIDV4 } = require("uuid");
 const pharmacyUtil = require("../pharmacy/pharmacy.util");
 const commonUtil = require("../common/common.util");
+const MedicineService = require("../medicine/medicine.service");
+const ConflictError = require("../error/error.classes/ConflictError");
+const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -97,4 +99,104 @@ const getOrdersByPharmacy = async (req, res) => {
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createOrder, getOrdersByPharmacy };
+const approveOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { medicines, auth } = req.body;
+
+  // validate medicines
+  if (!medicines) throw new BadRequestError("Medicines list is required!");
+  if (!(medicines instanceof Array))
+    throw new BadRequestError("Medicines should be sent in an Array!");
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order not found!");
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id);
+
+  let medicinesArr = [];
+  // process medicines
+  for (const medicine of medicines) {
+    // validate medicine id & quantity values
+    if (
+      !medicine?.globalMedicine?._id ||
+      !medicine.quantity ||
+      !medicine.name ||
+      medicine.availability === undefined
+    )
+      throw new BadRequestError("Invalid data in the medicines list!");
+
+    // validate medicine quantity
+    if (typeof medicine.quantity !== "number")
+      throw new BadRequestError(
+        `Quantity of medicine, ${medicine.name} should be a number!`
+      );
+
+    // validate global medicine
+    const dbGlobalMedicine = await GlobalMedicineService.findById(
+      medicine?.globalMedicine?._id
+    );
+    if (!dbGlobalMedicine)
+      throw new NotFoundError(`Medicine, ${medicine.name} not found!`);
+
+    const dbMedicine = await MedicineService.findMedicineByPharmacyId(
+      dbOrder.pharmacy._id,
+      dbGlobalMedicine._id
+    );
+    // validate medicine availability in pharmacy level
+    // report for items marked as available but not available
+    if (
+      medicine.quantity > dbMedicine.stockLevel &&
+      medicine.availability === true
+    ) {
+      throw new ConflictError(
+        `Stock for ${medicine.name} has run out! Please mark it as not available!`
+      );
+    }
+
+    // find suggessions for items with availability marked as false
+    if (medicine.availability === false) {
+      // TODO: Write nearest pharmacy suggession logic here.
+
+      const pMedicineObj = {
+        _id: null,
+        globalMedicine: {
+          _id: dbGlobalMedicine._id,
+          name: dbGlobalMedicine.name,
+        },
+        quantity: medicine.quantity,
+        availability: null,
+        subTotal: 0,
+        suggession: {
+          pharmacy: {
+            _id: "pharmacy id",
+          },
+        },
+      };
+      medicinesArr.push(pMedicineObj);
+      continue;
+    }
+
+    // prepare object
+    const pMedicineObj = {
+      _id: dbMedicine.id,
+      globalMedicine: {
+        _id: dbGlobalMedicine._id,
+        name: dbGlobalMedicine.name,
+      },
+      quantity: medicine.quantity,
+      availability: medicine.availability,
+      subTotal: dbMedicine.unitPrice * medicine.quantity,
+    };
+    medicinesArr.push(pMedicineObj);
+  }
+
+  console.log(medicinesArr);
+
+  return res
+    .status(StatusCodes.CREATED)
+    .json({ message: "Order approved successfully!", obj: null });
+};
+
+module.exports = { createOrder, getOrdersByPharmacy, approveOrder };

@@ -20,4 +20,9 @@ const findMedicineByPharmacyId = async (
   });
 };
 
-module.exports = { save, findMedicineByPharmacyId };
+const findById = async (id, session) => {
+  if (session) return await Medicine.findById(id).session(session);
+  return await Medicine.findById(id);
+};
+
+module.exports = { save, findMedicineByPharmacyId, findById };

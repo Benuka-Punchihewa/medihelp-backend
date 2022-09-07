@@ -8,7 +8,7 @@ const medicineController = require("./medicine.controller");
 
 // create order
 router.post(
-  "/pharamcies/:pharmacyId",
+  "/pharmacies/:pharmacyId",
   authMiddleware.authorize([
     constants.USER.ROLES.ADMIN,
     constants.USER.ROLES.PHARMACY_OWNER,

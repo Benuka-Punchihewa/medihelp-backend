@@ -29,4 +29,14 @@ router.get(
   orderController.getOrdersByPharmacy
 );
 
+// approve order
+router.patch(
+  "/:orderId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  orderController.approveOrder
+);
+
 module.exports = router;

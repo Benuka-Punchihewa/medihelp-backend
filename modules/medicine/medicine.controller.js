@@ -37,7 +37,7 @@ const createMedicine = async (req, res) => {
       throw new NotFoundError("Global medicine not found!");
 
     // validate medicine for duplications
-    const dbMedicine = MedicineService.findMedicineByPharmacyId(
+    const dbMedicine = await MedicineService.findMedicineByPharmacyId(
       dbPharmacy._id,
       dbGlobalMedicine._id,
       session
