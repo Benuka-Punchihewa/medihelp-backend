@@ -30,6 +30,9 @@ const constants = {
       NON_PRESCRIPTION: "non-prescription",
     },
   },
+  DELIVERY: {
+    CHARGE_PER_KM: 10,
+  },
 };
 
 module.exports = constants;

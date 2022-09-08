@@ -9,18 +9,16 @@ const findById = async (id, session) => {
   return await Pharmacy.findById(id);
 };
 
-const getallPharmacies = async(queryobj,pagableobj) => {
-  const { page ,limit , orderBy } = pagableobj;
+const getAllPagination = async (queryobj, pagableobj) => {
+  const { page, limit, orderBy } = pagableobj;
 
   const content = await Pharmacy.find(queryobj)
     .limit(limit * 1)
     .skip((page - 1) * limit)
-    .sort({ createdAt:orderBy })
+    .sort({ createdAt: orderBy })
     .exec();
 
   const totalElements = await Pharmacy.countDocuments(queryobj);
-
-  console.log(totalElements,limit);
 
   return {
     content,
@@ -29,4 +27,8 @@ const getallPharmacies = async(queryobj,pagableobj) => {
   };
 };
 
-module.exports = { save, findById ,getallPharmacies};
+const getAll = async () => {
+  return await Pharmacy.find({});
+};
+
+module.exports = { save, findById, getAllPagination, getAll };

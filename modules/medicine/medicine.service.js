@@ -25,4 +25,21 @@ const findById = async (id, session) => {
   return await Medicine.findById(id);
 };
 
-module.exports = { save, findMedicineByPharmacyId, findById };
+const reduceStockLevels = async (id, consumption, session) => {
+  return await Medicine.findByIdAndUpdate(
+    id,
+    { $inc: { stockLevel: -consumption } },
+    {
+      session: session,
+      new: true,
+      runValidators: true,
+    }
+  );
+};
+
+module.exports = {
+  save,
+  findMedicineByPharmacyId,
+  findById,
+  reduceStockLevels,
+};

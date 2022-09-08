@@ -12,6 +12,7 @@ const commonUtil = require("../common/common.util");
 const MedicineService = require("../medicine/medicine.service");
 const ConflictError = require("../error/error.classes/ConflictError");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
+const InternalServerError = require("../error/error.classes/InternalServerError");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -111,11 +112,14 @@ const approveOrder = async (req, res) => {
   // validate order
   const dbOrder = await OrderService.findById(orderId);
   if (!dbOrder) throw new NotFoundError("Order not found!");
+  if (dbOrder.status !== constants.ORDER.STATUS.PENDING)
+    throw new BadRequestError("Order is already approved!");
 
   // validate pharmacy authority
   pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id);
 
   let medicinesArr = [];
+  let medicineTotalFee = 0;
   // process medicines
   for (const medicine of medicines) {
     // validate medicine id & quantity values
@@ -147,6 +151,7 @@ const approveOrder = async (req, res) => {
     // validate medicine availability in pharmacy level
     // report for items marked as available but not available
     if (
+      dbMedicine &&
       medicine.quantity > dbMedicine.stockLevel &&
       medicine.availability === true
     ) {
@@ -155,10 +160,8 @@ const approveOrder = async (req, res) => {
       );
     }
 
-    // find suggessions for items with availability marked as false
-    if (medicine.availability === false) {
-      // TODO: Write nearest pharmacy suggession logic here.
-
+    if (medicine.availability === false || !dbMedicine) {
+      // should be processed later is exists
       const pMedicineObj = {
         _id: null,
         globalMedicine: {
@@ -168,11 +171,6 @@ const approveOrder = async (req, res) => {
         quantity: medicine.quantity,
         availability: null,
         subTotal: 0,
-        suggession: {
-          pharmacy: {
-            _id: "pharmacy id",
-          },
-        },
       };
       medicinesArr.push(pMedicineObj);
       continue;
@@ -180,7 +178,7 @@ const approveOrder = async (req, res) => {
 
     // prepare object
     const pMedicineObj = {
-      _id: dbMedicine.id,
+      _id: dbMedicine._id,
       globalMedicine: {
         _id: dbGlobalMedicine._id,
         name: dbGlobalMedicine.name,
@@ -190,13 +188,109 @@ const approveOrder = async (req, res) => {
       subTotal: dbMedicine.unitPrice * medicine.quantity,
     };
     medicinesArr.push(pMedicineObj);
+    medicineTotalFee += dbMedicine.unitPrice * medicine.quantity;
   }
 
-  console.log(medicinesArr);
+  // check for items not available in the requested pharmacy
+  const isResult = medicinesArr.find(
+    (medicine) => medicine.availability === null
+  );
+
+  // find suggessions only if item/items not available in the requested pharmacy exists
+  if (isResult) {
+    /**
+     * This call is very expensive and should be called only if neccessary
+     */
+    // get pharmacies by delivery location
+    const sortedPharmacies =
+      await pharmacyUtil.getPharmaciesSortedByNearestLocation(
+        dbOrder.delivery.location.latitude,
+        dbOrder.delivery.location.longitude
+      );
+
+    // for smaller medicine lists the below method is less expensive
+    // seperate filterations of not available items & then process & then create new Arr is resource hungry for smaller lists
+    for (const medicine of medicinesArr) {
+      if (medicine.availability === null) {
+        for (const pharmacy of sortedPharmacies) {
+          const dbMedicineV2 = await MedicineService.findMedicineByPharmacyId(
+            pharmacy._id,
+            medicine.globalMedicine._id
+          );
+
+          if (dbMedicineV2) {
+            medicine.suggession = pharmacy;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // construct body
+  const order = new Order(dbOrder);
+
+  order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+  order.medicines = medicinesArr;
+  order.payment.subtotal = medicineTotalFee.toFixed(2);
+
+  /**
+   * calculate delivery fee
+   */
+  // get pharmacy
+  const dbPharmacy = await PharmacyService.findById(dbOrder.pharmacy._id);
+  const crowDistance = commonUtil.getDistanceBetweenPoints(
+    dbOrder.delivery.location.latitude,
+    dbOrder.delivery.location.longitude,
+    dbPharmacy.location.latitude,
+    dbPharmacy.location.longitude
+  );
+  order.payment.delivery = (
+    crowDistance * constants.DELIVERY.CHARGE_PER_KM
+  ).toFixed(2);
+
+  order.payment.total = order.payment.delivery + order.payment.subtotal;
+
+  // filter out available medicines to record stock consumption
+  const availableMedicines = medicinesArr.filter(
+    (medicine) => medicine.availability === true
+  );
+
+  // start mongoose default session
+  const session = await startSession();
+
+  try {
+    // start transaction for the session
+    session.startTransaction();
+
+    // reduce stock levels - should increase back if user rejects at customer confirmation
+    for (const availableMedicine of availableMedicines) {
+      const dbMed = await MedicineService.reduceStockLevels(
+        availableMedicine._id,
+        availableMedicine.quantity,
+        session
+      );
+      if (!dbMed)
+        throw new InternalServerError("Encountered a database error!");
+    }
+
+    // update order details
+    await OrderService.save(order, session);
+
+    // commit transaction
+    await session.commitTransaction();
+  } catch (err) {
+    // abort transaction
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    // end session
+    await session.endSession();
+  }
 
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: "Order approved successfully!", obj: null });
+    .json({ message: "Order approved successfully!", obj: order });
 };
 
 module.exports = { createOrder, getOrdersByPharmacy, approveOrder };
