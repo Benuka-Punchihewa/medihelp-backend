@@ -15,8 +15,15 @@ const createGlobalMedincine = async (req, res) => {
 
 const getGlobalMedicines = async (req, res) => {
   const { pagable } = req.body;
+  const { keyword } = req.query;
 
-  const result = await GlobalMedicineService.getGlobalMedicines({}, pagable);
+  const queryObj = {};
+  if (keyword) queryObj.name = { $regex: keyword, $options: "i" };
+
+  const result = await GlobalMedicineService.getGlobalMedicines(
+    queryObj,
+    pagable
+  );
 
   return res.status(StatusCodes.OK).json(result);
 };
