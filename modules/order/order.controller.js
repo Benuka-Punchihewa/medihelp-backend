@@ -86,6 +86,7 @@ const createOrder = async (req, res) => {
 const getOrdersByPharmacy = async (req, res) => {
   const { auth, pagable } = req.body;
   const { pharmacyId } = req.params;
+  const { keyword } = req.query;
 
   // validate pharmacy
   const dbPharamacy = await PharmacyService.findById(pharmacyId);
@@ -94,7 +95,10 @@ const getOrdersByPharmacy = async (req, res) => {
   // validate authority
   pharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
 
+  // prepare query object
   const queryObj = { "pharmacy._id": pharmacyId };
+  if (keyword) queryObj._id = { $regex: keyword, $options: "i" };
+
   const result = await OrderService.getOrders(queryObj, pagable);
 
   return res.status(StatusCodes.OK).json(result);
