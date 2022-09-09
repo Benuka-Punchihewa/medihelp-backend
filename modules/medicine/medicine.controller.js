@@ -69,4 +69,30 @@ const createMedicine = async (req, res) => {
   });
 };
 
-module.exports = { createMedicine };
+const getMedicineByGId = async (req, res) => {
+  const { globalMedicineId, pharmacyId } = req.params;
+  const { auth } = req.body;
+
+  // validate pharmacy
+  const dbPharamacy = await PharmacyService.findById(pharmacyId);
+  if (!dbPharamacy) throw new NotFoundError("Pharmacy not found!");
+
+  // validate authority
+  PharamcyUtil.validatePharmacyAuthority(auth, pharmacyId);
+
+  // validate global medicine
+  const dbGlobalMedicine = await GlobalMedicineService.findById(
+    globalMedicineId
+  );
+  if (!dbGlobalMedicine) throw new NotFoundError("Global medicine not found!");
+
+  const dbMedicine = await MedicineService.findMedicineByPharmacyId(
+    pharmacyId,
+    globalMedicineId
+  );
+  if (!dbMedicine) throw new NotFoundError("Medicine not found!");
+
+  return res.status(StatusCodes.CREATED).json(dbMedicine);
+};
+
+module.exports = { createMedicine, getMedicineByGId };

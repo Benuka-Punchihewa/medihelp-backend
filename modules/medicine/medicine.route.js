@@ -16,4 +16,14 @@ router.post(
   medicineController.createMedicine
 );
 
+// get by Id
+router.get(
+  "/global-medicines/:globalMedicineId/pharmacies/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.PHARMACY_OWNER,
+  ]),
+  medicineController.getMedicineByGId
+);
+
 module.exports = router;
