@@ -6,8 +6,12 @@ const OrderedMedicineSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Medicine",
   },
-  name: {
-    type: String,
+  globalMedicine: {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GlobalMedicine",
+    },
+    name: { type: String },
   },
   quantity: {
     type: Number,
