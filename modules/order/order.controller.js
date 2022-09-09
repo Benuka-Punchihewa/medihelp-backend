@@ -120,7 +120,7 @@ const approveOrder = async (req, res) => {
     throw new BadRequestError("Order is already approved!");
 
   // validate pharmacy authority
-  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id);
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
 
   let medicinesArr = [];
   let medicineTotalFee = 0;

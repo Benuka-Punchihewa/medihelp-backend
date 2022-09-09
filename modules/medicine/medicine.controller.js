@@ -69,6 +69,31 @@ const createMedicine = async (req, res) => {
   });
 };
 
+const getMedicineByGId = async (req, res) => {
+  const { globalMedicineId, pharmacyId } = req.params;
+  const { auth } = req.body;
+
+  // validate pharmacy
+  const dbPharamacy = await PharmacyService.findById(pharmacyId);
+  if (!dbPharamacy) throw new NotFoundError("Pharmacy not found!");
+
+  PharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
+
+  // validate global medicine
+  const dbGlobalMedicine = await GlobalMedicineService.findById(
+    globalMedicineId
+  );
+  if (!dbGlobalMedicine) throw new NotFoundError("Global medicine not found!");
+
+  const dbMedicine = await MedicineService.findMedicineByPharmacyId(
+    pharmacyId,
+    globalMedicineId
+  );
+  if (!dbMedicine) throw new NotFoundError("Medicine not found!");
+
+  return res.status(StatusCodes.CREATED).json(dbMedicine);
+};
+
 const getAllMedicines = async (req, res) => {
   const { auth, pagable } = req.body;
   const { pharmacyId } = req.params;
@@ -84,9 +109,9 @@ const getAllMedicines = async (req, res) => {
   const queryObj = { "pharmacy._id": pharmacyId };
   if (keyword) queryObj._id = { $regex: keyword, $options: "i" };
 
-  const result = await MedicineService.getAllMedicines(queryObj,pagable);
+  const result = await MedicineService.getAllMedicines(queryObj, pagable);
 
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createMedicine, getAllMedicines};
+module.exports = { createMedicine, getAllMedicines, getMedicineByGId };
