@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const constants = require("../../constants");
-const PharmacyModel = require("../pharmacy/pharmacy.model");
 
 const OrderedMedicineSchema = new mongoose.Schema({
   _id: {
@@ -20,7 +19,7 @@ const OrderedMedicineSchema = new mongoose.Schema({
     type: Number,
   },
   suggession: {
-    type: PharmacyModel.schema,
+    type: Object,
   },
 });
 

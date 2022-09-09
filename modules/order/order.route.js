@@ -31,7 +31,7 @@ router.get(
 
 // approve order
 router.patch(
-  "/:orderId",
+  "/:orderId/approve",
   authMiddleware.authorize([
     constants.USER.ROLES.PHARMACY_OWNER,
     constants.USER.ROLES.ADMIN,
