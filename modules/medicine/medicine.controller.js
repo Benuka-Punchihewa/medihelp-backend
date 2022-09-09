@@ -3,7 +3,7 @@ const Medicine = require("./medicine.model");
 const PharmacyService = require("../pharmacy/pharmacy.service");
 const NotFoundError = require("../error/error.classes/NotFoundError");
 const ConflictError = require("../error/error.classes/ConflictError");
-const PharamcyUtil = require("../pharmacy/pharmacy.util");
+const PharmacyUtil = require("../pharmacy/pharmacy.util");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 const MedicineService = require("./medicine.service");
 const { startSession } = require("mongoose");
@@ -26,7 +26,7 @@ const createMedicine = async (req, res) => {
     if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
 
     // validate authority
-    PharamcyUtil.validatePharmacyAuthority(req.body.auth, dbPharmacy._id);
+    PharmacyUtil.validatePharmacyAuthority(req.body.auth, dbPharmacy._id);
 
     // validate global medicine
     const dbGlobalMedicine = await GlobalMedicineService.findById(
@@ -69,4 +69,24 @@ const createMedicine = async (req, res) => {
   });
 };
 
-module.exports = { createMedicine };
+const getAllMedicines = async (req, res) => {
+  const { auth, pagable } = req.body;
+  const { pharmacyId } = req.params;
+  const { keyword } = req.query;
+
+  // validate pharmacy
+  const dbPharamacy = await PharmacyService.findById(pharmacyId);
+  if (!dbPharamacy) throw new NotFoundError("Pharmacy not found!");
+
+  // validate authority
+  PharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
+
+  const queryObj = { "pharmacy._id": pharmacyId };
+  if (keyword) queryObj._id = { $regex: keyword, $options: "i" };
+
+  const result = await MedicineService.getAllMedicines(queryObj,pagable);
+
+  return res.status(StatusCodes.OK).json(result);
+};
+
+module.exports = { createMedicine, getAllMedicines};
