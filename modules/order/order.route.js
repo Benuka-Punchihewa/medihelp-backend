@@ -39,4 +39,12 @@ router.patch(
   orderController.approveOrder
 );
 
+// get orders by user id - FOR CUSTOMERS ONLY
+router.get(
+  "/users/:userId",
+  authMiddleware.authorize([]),
+  commonMiddleware.paginate,
+  orderController.getOrdersByUserId
+);
+
 module.exports = router;

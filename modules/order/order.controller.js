@@ -13,6 +13,7 @@ const MedicineService = require("../medicine/medicine.service");
 const ConflictError = require("../error/error.classes/ConflictError");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 const InternalServerError = require("../error/error.classes/InternalServerError");
+const UserService = require("../user/user.service");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -293,8 +294,30 @@ const approveOrder = async (req, res) => {
   }
 
   return res
-    .status(StatusCodes.CREATED)
+    .status(StatusCodes.OK)
     .json({ message: "Order approved successfully!", obj: order });
 };
 
-module.exports = { createOrder, getOrdersByPharmacy, approveOrder };
+// for customers only
+const getOrdersByUserId = async (req, res) => {
+  const { pagable } = req.body;
+  const { userId } = req.params;
+
+  // validate user
+  const dbUser = await UserService.findById(userId);
+  if (!dbUser) throw new NotFoundError("User not found!");
+
+  // prepare query object
+  const queryObj = { "customer._id": userId };
+
+  const result = await OrderService.getOrders(queryObj, pagable);
+
+  return res.status(StatusCodes.OK).json(result);
+};
+
+module.exports = {
+  createOrder,
+  getOrdersByPharmacy,
+  approveOrder,
+  getOrdersByUserId,
+};
