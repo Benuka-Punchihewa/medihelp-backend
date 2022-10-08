@@ -302,6 +302,7 @@ const approveOrder = async (req, res) => {
 const getOrdersByUserId = async (req, res) => {
   const { pagable } = req.body;
   const { userId } = req.params;
+  const { status } = req.query;
 
   // validate user
   const dbUser = await UserService.findById(userId);
@@ -309,6 +310,17 @@ const getOrdersByUserId = async (req, res) => {
 
   // prepare query object
   const queryObj = { "customer._id": userId };
+  if (status === constants.ORDER.CUSTOMER_F_STATUS.PENDING)
+    queryObj.$or = [
+      { status: constants.ORDER.STATUS.PENDING },
+      { status: constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION },
+    ];
+  if (status === constants.ORDER.CUSTOMER_F_STATUS.ONGOING)
+    queryObj.status = constants.ORDER.STATUS.CONFIRMED;
+  if (status === constants.ORDER.CUSTOMER_F_STATUS.COMPLETED)
+    queryObj.status = constants.ORDER.STATUS.COMPLETED;
+  if (status === constants.ORDER.CUSTOMER_F_STATUS.CANCELLED)
+    queryObj.status = constants.ORDER.STATUS.CANCELLED;
 
   const result = await OrderService.getOrders(queryObj, pagable);
 

@@ -17,6 +17,12 @@ const constants = {
       CANCELLED: "cancelled",
       COMPLETED: "completed",
     },
+    CUSTOMER_F_STATUS: {
+      PENDING: "pending",
+      ONGOING: "ongoing",
+      COMPLETED: "completed",
+      CANCELLED: "cancelled",
+    },
   },
   PAYMENT: {
     METHODS: {
