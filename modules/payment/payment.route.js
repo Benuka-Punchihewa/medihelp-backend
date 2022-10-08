@@ -6,7 +6,7 @@ const PaymentController = require("./payment.controller");
 
 // create order
 router.post(
-  "/checkout-session",
+  "/checkout-session/orders/:orderId",
   authMiddleware.authorize([
     constants.USER.ROLES.CUSTOMER,
     constants.USER.ROLES.PHARMACY_OWNER,
