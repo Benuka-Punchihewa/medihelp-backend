@@ -18,9 +18,19 @@ const paymentRoutes = require("./modules/payment/payment.route");
 
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+// Use parsers only for non-webhook routes
+app.use((req, res, next) => {
+  if (
+    req.originalUrl === constants.API.PREFIX.concat("/payments/stripe-webhook")
+  ) {
+    next();
+  } else {
+    express.json()(req, res, next);
+    app.use(express.urlencoded({ extended: true }));
+  }
+});
 
 // define routes
 app.use(constants.API.PREFIX.concat("/users"), userRoutes);

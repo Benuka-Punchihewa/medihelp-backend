@@ -34,6 +34,11 @@ const constants = {
   DELIVERY: {
     CHARGE_PER_KM: 10,
   },
+  STRIPE_CHECKOUT_SESSION: {
+    PAYMENT_STATUS: {
+      PAID: "paid",
+    },
+  },
 };
 
 module.exports = constants;

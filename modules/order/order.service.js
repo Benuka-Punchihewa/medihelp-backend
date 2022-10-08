@@ -23,7 +23,7 @@ const getOrders = async (queryObj, pagableObj) => {
   const content = await Order.find(queryObj)
     .limit(limit * 1)
     .skip((page - 1) * limit)
-    .sort({ createdAt: orderBy })
+    .sort({ updatedAt: orderBy })
     .exec();
 
   const totalElements = await Order.countDocuments(queryObj);

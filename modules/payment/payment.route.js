@@ -15,4 +15,10 @@ router.post(
   PaymentController.createCheckoutSession
 );
 
+router.post(
+  "/stripe-webhook",
+  express.raw({ type: "application/json" }),
+  PaymentController.ListenForStripeEvents
+);
+
 module.exports = router;
