@@ -14,6 +14,8 @@ const ConflictError = require("../error/error.classes/ConflictError");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 const InternalServerError = require("../error/error.classes/InternalServerError");
 const UserService = require("../user/user.service");
+const { compareSync } = require("bcryptjs");
+const ForbiddenError = require("../error/error.classes/ForbiddenError");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -39,6 +41,7 @@ const createOrder = async (req, res) => {
   order.payment.status = false;
   order.customer._id = auth._id;
   order.pharmacy._id = dbPharmacy._id;
+  order.pharmacy.name = dbPharmacy.name;
   order.status = constants.ORDER.STATUS.PENDING;
 
   // start mongoose default session
@@ -300,31 +303,40 @@ const approveOrder = async (req, res) => {
 
 // for customers only
 const getOrdersByUserId = async (req, res) => {
-  const { pagable } = req.body;
-  const { userId } = req.params;
+  const { pagable, auth } = req.body;
   const { status } = req.query;
 
-  // validate user
-  const dbUser = await UserService.findById(userId);
-  if (!dbUser) throw new NotFoundError("User not found!");
-
   // prepare query object
-  const queryObj = { "customer._id": userId };
-  if (status === constants.ORDER.CUSTOMER_F_STATUS.PENDING)
-    queryObj.$or = [
-      { status: constants.ORDER.STATUS.PENDING },
-      { status: constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION },
-    ];
-  if (status === constants.ORDER.CUSTOMER_F_STATUS.ONGOING)
-    queryObj.status = constants.ORDER.STATUS.CONFIRMED;
-  if (status === constants.ORDER.CUSTOMER_F_STATUS.COMPLETED)
-    queryObj.status = constants.ORDER.STATUS.COMPLETED;
-  if (status === constants.ORDER.CUSTOMER_F_STATUS.CANCELLED)
-    queryObj.status = constants.ORDER.STATUS.CANCELLED;
+  const queryObj = { "customer._id": auth._id };
+  queryObj.status = status;
 
   const result = await OrderService.getOrders(queryObj, pagable);
 
   return res.status(StatusCodes.OK).json(result);
+};
+
+// ONLY FOR CASH ON DELIVERY ORDERS
+const confirmOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Order is already confirmed!");
+
+  if (dbOrder.customer._id.toString() !== auth._id)
+    // validate authority
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  dbOrder.status = constants.ORDER.STATUS.CONFIRMED;
+  dbOrder.payment.method = constants.PAYMENT.METHODS.CASH_ON_DELIVERY;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order confirmed successfully!", dbOrder });
 };
 
 module.exports = {
@@ -332,4 +344,5 @@ module.exports = {
   getOrdersByPharmacy,
   approveOrder,
   getOrdersByUserId,
+  confirmOrder,
 };

@@ -17,18 +17,13 @@ const constants = {
       CANCELLED: "cancelled",
       COMPLETED: "completed",
     },
-    CUSTOMER_F_STATUS: {
-      PENDING: "pending",
-      ONGOING: "ongoing",
-      COMPLETED: "completed",
-      CANCELLED: "cancelled",
-    },
   },
   PAYMENT: {
     METHODS: {
       ONLINE: "online",
       CASH_ON_DELIVERY: "cash_on_delivery",
     },
+    PAYMENT_CURRENCY: "LKR",
   },
   MEDICINE: {
     TYPE: {

@@ -41,10 +41,21 @@ router.patch(
 
 // get orders by user id - FOR CUSTOMERS ONLY
 router.get(
-  "/users/:userId",
+  "/",
   authMiddleware.authorize([]),
   commonMiddleware.paginate,
   orderController.getOrdersByUserId
+);
+
+// confirm order - FOR CUSTOMERS ONLY
+router.patch(
+  "/:orderId/confirm",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  orderController.confirmOrder
 );
 
 module.exports = router;
