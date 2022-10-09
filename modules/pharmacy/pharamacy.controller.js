@@ -54,12 +54,12 @@ const createPharmacy = async (req, res) => {
     .json({ message: "Pharmacy created successfully!", obj: pharmacy });
 };
 
-const getallPharmacies = async (req, res) => {
+const findAllPharmacyPagination = async (req, res) => {
   const { pagable } = req.body;
 
-  const result = await PharmacyService.getAllPagination({}, pagable);
+  const result = await PharmacyService.findAllPharmacyPagination({}, pagable);
 
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createPharmacy, getallPharmacies };
+module.exports = { createPharmacy, findAllPharmacyPagination };
