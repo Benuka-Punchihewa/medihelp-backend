@@ -62,4 +62,14 @@ const findAllPharmacyPagination = async (req, res) => {
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createPharmacy, findAllPharmacyPagination };
+//get pharmacy by id
+const getPharmacyById = async (req, res) => {
+  const { pharmacyId } = req.params;
+
+  const dbPharamacy = await PharmacyService.findById (pharmacyId);
+
+  return res.status(StatusCodes.OK).json(dbPharamacy);
+};
+
+
+module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById};

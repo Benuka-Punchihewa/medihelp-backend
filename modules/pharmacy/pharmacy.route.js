@@ -24,4 +24,15 @@ commonMiddleware.paginate,
 pharmacyController.findAllPharmacyPagination
 );
 
+// get pharmacy id
+router.get(
+  "/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  pharmacyController.getPharmacyById
+);
+
 module.exports = router;
