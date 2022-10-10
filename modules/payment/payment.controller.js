@@ -3,6 +3,7 @@ const constants = require("../../constants");
 const BadRequestError = require("../error/error.classes/BadRequestError");
 const NotFoundError = require("../error/error.classes/NotFoundError");
 const OrderService = require("../order/order.service");
+const PaymentUtil = require("./payment.util");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -45,6 +46,29 @@ const createCheckoutSession = async (req, res) => {
 
   const session = await stripe.checkout.sessions.create({
     line_items: lineItems,
+    shipping_options: [
+      {
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: {
+            amount: Math.trunc((dbOrder.payment.delivery) * 100),
+            currency: constants.PAYMENT.PAYMENT_CURRENCY,
+          },
+          display_name: "Standard Delivery",
+          // Delivers between 2-5 business days
+          delivery_estimate: {
+            minimum: {
+              unit: "business_day",
+              value: 2,
+            },
+            maximum: {
+              unit: "business_day",
+              value: 5,
+            },
+          },
+        },
+      },
+    ],
     currency: constants.PAYMENT.PAYMENT_CURRENCY,
     metadata: {
       orderId: dbOrder._id,
@@ -59,4 +83,36 @@ const createCheckoutSession = async (req, res) => {
     .json({ message: "Go to the provided URL", url: session.url });
 };
 
-module.exports = { createCheckoutSession };
+const ListenForStripeEvents = async (req, res) => {
+  console.log("Stripe webhook called");
+
+  const sig = req.headers["stripe-signature"];
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.log(err);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case "checkout.session.completed":
+      const checkoutSession = event.data.object;
+      PaymentUtil.handlePaymentSuccessEvent(checkoutSession);
+      break;
+    default:
+      console.log(`Unhandled event type: ${event.type}`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  res.send();
+};
+
+module.exports = { createCheckoutSession, ListenForStripeEvents };
