@@ -21,7 +21,7 @@ authMiddleware.authorize([
   constants.USER.ROLES.ADMIN,
 ]),
 commonMiddleware.paginate,
-pharmacyController.getallPharmacies
+pharmacyController.findAllPharmacyPagination
 );
 
 module.exports = router;

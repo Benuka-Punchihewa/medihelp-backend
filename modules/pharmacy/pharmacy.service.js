@@ -9,7 +9,7 @@ const findById = async (id, session) => {
   return await Pharmacy.findById(id);
 };
 
-const getAllPagination = async (queryobj, pagableobj) => {
+const findAllPharmacyPagination = async (queryobj, pagableobj) => {
   const { page, limit, orderBy } = pagableobj;
 
   const content = await Pharmacy.find(queryobj)
@@ -31,4 +31,4 @@ const getAll = async () => {
   return await Pharmacy.find({});
 };
 
-module.exports = { save, findById, getAllPagination, getAll };
+module.exports = { save, findById, findAllPharmacyPagination, getAll };
