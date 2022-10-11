@@ -14,7 +14,6 @@ const ConflictError = require("../error/error.classes/ConflictError");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 const InternalServerError = require("../error/error.classes/InternalServerError");
 const UserService = require("../user/user.service");
-const { compareSync } = require("bcryptjs");
 const ForbiddenError = require("../error/error.classes/ForbiddenError");
 
 const createOrder = async (req, res) => {
@@ -84,7 +83,7 @@ const createOrder = async (req, res) => {
 
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: "Order created successfully!", obj: order });
+    .json({ message: "Order has been created successfully!", obj: order });
 };
 
 const getOrdersByPharmacy = async (req, res) => {
@@ -122,6 +121,8 @@ const approveOrder = async (req, res) => {
   if (!dbOrder) throw new NotFoundError("Order not found!");
   if (dbOrder.status !== constants.ORDER.STATUS.PENDING)
     throw new BadRequestError("Order is already approved!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new ConflictError("Order is rejected!");
 
   // validate pharmacy authority
   pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
@@ -238,7 +239,9 @@ const approveOrder = async (req, res) => {
   // construct body
   const order = new Order(dbOrder);
 
-  order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+  if (medicineTotalFee === 0) order.status = constants.ORDER.STATUS.CANCELLED;
+  else order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+
   order.medicines = medicinesArr;
   order.payment.subtotal = medicineTotalFee.toFixed(2);
 
@@ -298,7 +301,7 @@ const approveOrder = async (req, res) => {
 
   return res
     .status(StatusCodes.OK)
-    .json({ message: "Order approved successfully!", obj: order });
+    .json({ message: "Order has been approved successfully!", obj: order });
 };
 
 // for customers only
@@ -323,11 +326,19 @@ const confirmOrder = async (req, res) => {
   // validate order
   const dbOrder = await OrderService.findById(orderId);
   if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
   if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
     throw new ConflictError("Order is already confirmed!");
+  if (dbOrder.status === constants.ORDER.STATUS.PENDING)
+    throw new BadRequestError("Order has not been approved yet!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new BadRequestError("Cannot confirm rejected orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new BadRequestError("Cannot confirm completed orders!");
 
+  // validate authority
   if (dbOrder.customer._id.toString() !== auth._id)
-    // validate authority
     throw new ForbiddenError(`You're not permitted to access this resouce!`);
 
   dbOrder.status = constants.ORDER.STATUS.CONFIRMED;
@@ -336,7 +347,71 @@ const confirmOrder = async (req, res) => {
 
   return res
     .status(StatusCodes.OK)
-    .json({ message: "Order confirmed successfully!", dbOrder });
+    .json({ message: "Order has been confirmed successfully!", dbOrder });
+};
+
+const rejectOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new ConflictError("Order is already rejected!");
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Cannot reject confirmed orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new BadRequestError("Cannot reject completed orders!");
+
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Cannot reject confirmed orders!");
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
+  if (dbOrder.customer._id.toString() !== auth._id)
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  // update db
+  dbOrder.status = constants.ORDER.STATUS.CANCELLED;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been rejected successfully!", dbOrder });
+};
+
+// For pharmacy owners
+const completeOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new ConflictError("Order is already completed!");
+  if (dbOrder.status === constants.ORDER.STATUS.PENDING)
+    throw new BadRequestError("Cannot complete rejected orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION)
+    throw new BadRequestError("Cannot complete unapproved orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new BadRequestError("Cannot complete rejected orders!");
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
+
+  // update db
+  dbOrder.status = constants.ORDER.STATUS.COMPLETED;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been completed successfully!", dbOrder });
 };
 
 module.exports = {
@@ -345,4 +420,6 @@ module.exports = {
   approveOrder,
   getOrdersByUserId,
   confirmOrder,
+  rejectOrder,
+  completeOrder,
 };
