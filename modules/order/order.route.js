@@ -58,4 +58,25 @@ router.patch(
   orderController.confirmOrder
 );
 
+// reject order
+router.patch(
+  "/:orderId/reject",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  orderController.rejectOrder
+);
+
+// complete order
+router.patch(
+  "/:orderId/complete",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  orderController.completeOrder
+);
+
 module.exports = router;
