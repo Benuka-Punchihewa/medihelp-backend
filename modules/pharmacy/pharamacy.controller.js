@@ -77,9 +77,9 @@ const getPharmacyById = async (req, res) => {
 
 //get nearest pharmacy
 const getPharmaciesByNearestLocation = async (req, res) => {
-  const {lat,lng} = req.query;
+  const {keyword,lat,lng} = req.query;
   const {pagable} = req.body;
-
+  
   if(!lat || !lng )
     throw new BadRequestError(
       "Provide both longitudes and latitudes"
@@ -89,9 +89,10 @@ const getPharmaciesByNearestLocation = async (req, res) => {
           lat,
           lng
   );
+
+  const filterednPharmacies = nPharamacies.filter(pharmacy => pharmacy.name.toLowerCase().includes(keyword.toLowerCase()))
   
-  console.log(pagable);
-  const result = commonUtil.arrPaginate(nPharamacies, pagable);
+  const result = commonUtil.arrPaginate(filterednPharmacies, pagable);
   
   return res.status(StatusCodes.OK).json(result);
 };
