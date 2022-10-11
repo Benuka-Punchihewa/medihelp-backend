@@ -6,6 +6,9 @@ const NotFoundError = require("../error/error.classes/NotFoundError");
 const Pharmacy = require("./pharmacy.model");
 const PharmacyService = require("./pharmacy.service");
 const UserService = require("../user/user.service");
+const BadRequestError = require("../error/error.classes/BadRequestError");
+const PharmacyUtil = require("../pharmacy/pharmacy.util");
+const commonUtil = require("../common/common.util");
 
 const createPharmacy = async (req, res) => {
   const { auth } = req.body;
@@ -72,4 +75,25 @@ const getPharmacyById = async (req, res) => {
 };
 
 
-module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById};
+//get nearest pharmacy
+const getPharmaciesByNearestLocation = async (req, res) => {
+  const {lat,lng} = req.query;
+  const {pagable} = req.body;
+
+  if(!lat || !lng )
+    throw new BadRequestError(
+      "Provide both longitudes and latitudes"
+    );
+
+  const nPharamacies = await PharmacyUtil.getPharmaciesSortedByNearestLocation(
+          lat,
+          lng
+  );
+  
+  console.log(pagable);
+  const result = commonUtil.arrPaginate(nPharamacies, pagable);
+  
+  return res.status(StatusCodes.OK).json(result);
+};
+    
+module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation};
