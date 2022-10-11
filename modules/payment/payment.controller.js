@@ -13,13 +13,21 @@ const createCheckoutSession = async (req, res) => {
   // validate order
   const dbOrder = await OrderService.findById(orderId);
   if (!dbOrder) throw new NotFoundError("Order not found!");
+
+  // validate order status
   if (dbOrder.status === constants.ORDER.STATUS.PENDING)
-    throw new BadRequestError("Order has not been approved by the pharmacy!");
+    throw new BadRequestError("Order has not been approved yet!");
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Order is already confirmed!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new BadRequestError("Order is rejected!");
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new BadRequestError("Order is already completed!");
   if (
     dbOrder.payment.status === true &&
     dbOrder.payment.method === constants.PAYMENT.METHODS.ONLINE
   )
-    throw new BadRequestError("Payment has been already done");
+    throw new BadRequestError("Payment is already done!");
   if (dbOrder.payment.method === constants.PAYMENT.METHODS.CASH_ON_DELIVERY)
     throw new BadRequestError(
       "Cannot make online payments for cash on delivery orders!"
@@ -51,7 +59,7 @@ const createCheckoutSession = async (req, res) => {
         shipping_rate_data: {
           type: "fixed_amount",
           fixed_amount: {
-            amount: Math.trunc((dbOrder.payment.delivery) * 100),
+            amount: Math.trunc(dbOrder.payment.delivery * 100),
             currency: constants.PAYMENT.PAYMENT_CURRENCY,
           },
           display_name: "Standard Delivery",

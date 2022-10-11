@@ -239,7 +239,9 @@ const approveOrder = async (req, res) => {
   // construct body
   const order = new Order(dbOrder);
 
-  order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+  if (medicineTotalFee === 0) order.status = constants.ORDER.STATUS.CANCELLED;
+  else order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+
   order.medicines = medicinesArr;
   order.payment.subtotal = medicineTotalFee.toFixed(2);
 
