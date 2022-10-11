@@ -35,4 +35,13 @@ router.get(
   pharmacyController.getPharmacyById
 );
 
+
+
+//get nearest pharmacies
+router.get(
+  "/v/customer",
+  commonMiddleware.paginate,
+  pharmacyController.getPharmaciesByNearestLocation
+);
+
 module.exports = router;
