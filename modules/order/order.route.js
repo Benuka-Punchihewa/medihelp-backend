@@ -79,4 +79,10 @@ router.patch(
   orderController.completeOrder
 );
 
+router.delete(
+  "/:orderId/remove",
+  authMiddleware.authorize([]),
+  orderController.hideOrder
+);
+
 module.exports = router;

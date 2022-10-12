@@ -371,7 +371,10 @@ const rejectOrder = async (req, res) => {
 
   // validate pharmacy authority
   pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
-  if (dbOrder.customer._id.toString() !== auth._id)
+  if (
+    auth.role === constants.USER.ROLES.CUSTOMER &&
+    dbOrder.customer._id.toString() !== auth._id
+  )
     throw new ForbiddenError(`You're not permitted to access this resouce!`);
 
   // update db
@@ -414,6 +417,38 @@ const completeOrder = async (req, res) => {
     .json({ message: "Order has been completed successfully!", dbOrder });
 };
 
+// FOR CUSTOMERS ONLY - To remove cancelled or completed orders
+const hideOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  if (
+    auth.role === constants.USER.ROLES.CUSTOMER &&
+    dbOrder.customer._id.toString() !== auth._id
+  )
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  if (
+    dbOrder.status !== constants.ORDER.STATUS.CANCELLED &&
+    dbOrder.status !== constants.ORDER.STATUS.COMPLETED
+  )
+    throw new BadRequestError(
+      "You can only remove cancelled or completed orders!"
+    );
+
+  // update db
+  dbOrder.isHidden = true;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been removed successfully!", dbOrder });
+};
+
 module.exports = {
   createOrder,
   getOrdersByPharmacy,
@@ -422,4 +457,5 @@ module.exports = {
   confirmOrder,
   rejectOrder,
   completeOrder,
+  hideOrder,
 };
