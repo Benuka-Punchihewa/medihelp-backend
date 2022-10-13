@@ -498,7 +498,10 @@ const getOrderStats = async (req, res) => {
       ],
     });
 
-    dailyOrders.push({ day, dailyOrderCount });
+    dailyOrders.push({
+      day: constants.DAYS[new Date(targetDay).getUTCDay()],
+      orderCount: dailyOrderCount,
+    });
     day--;
   }
 
