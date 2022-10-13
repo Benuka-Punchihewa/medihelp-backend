@@ -96,5 +96,39 @@ const getPharmaciesByNearestLocation = async (req, res) => {
   
   return res.status(StatusCodes.OK).json(result);
 };
-    
-module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation};
+   
+
+// update a Trainer
+const updatePharmacy = async(req, res) => {
+
+  const { pharmacyId } = req.params
+
+  const dbPharmacy = await Pharmacy.findByIdAndUpdate({_id: pharmacyId}, {
+      ...req.body
+  })
+
+  if(!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+
+  return res.status(StatusCodes.CREATED).json({
+    message:"Pharmacy Update Succesfully!",
+    obj:dbPharmacy,
+  });
+  
+}
+
+// delete Pharmacy
+const deletePharmacy = async (req, res) => {
+  const { pharmacyId } = req.params
+
+  const dbPharmacy  = await Pharmacy.findOneAndDelete({_id: pharmacyId})
+  
+  if(!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+
+  return res.status(StatusCodes.CREATED).json({
+    message:"Pharmacy Delete Succesfully!",
+    obj:dbPharmacy,
+  });
+  
+}
+
+module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation,updatePharmacy,deletePharmacy};

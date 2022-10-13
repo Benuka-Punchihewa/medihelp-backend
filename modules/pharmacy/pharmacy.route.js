@@ -35,13 +35,29 @@ router.get(
   pharmacyController.getPharmacyById
 );
 
-
-
 //get nearest pharmacies
 router.get(
   "/v/customer",
   commonMiddleware.paginate,
   pharmacyController.getPharmaciesByNearestLocation
 );
+
+//update pharmacy
+router.patch(
+  "/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN]),
+  pharmacyController.updatePharmacy
+);
+
+//delete pharmacy
+router.delete(
+  "/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.ADMIN]),
+  pharmacyController.deletePharmacy
+);
+
 
 module.exports = router;
