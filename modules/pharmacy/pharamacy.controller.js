@@ -96,5 +96,50 @@ const getPharmaciesByNearestLocation = async (req, res) => {
   
   return res.status(StatusCodes.OK).json(result);
 };
-    
-module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation};
+   
+
+// update a pharmacy
+const updatePharmacy = async(req, res) => {
+  const { pharmacyId } = req.params
+  const { name, registrationNumber, address, contactNumber, email } = req.body;
+  
+  const dbPharmacy = await PharmacyService.findById(
+    pharmacyId
+  );
+
+  if(!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+
+  if (name) dbPharmacy.name = name;
+  if (registrationNumber) dbPharmacy.registrationNumber = registrationNumber;
+  if (address) dbPharmacy.address = address;
+  if (contactNumber) dbPharmacy.contactNumber = contactNumber;
+  if (email) dbPharmacy.email = email;
+
+     // update Pharmacy
+    await PharmacyService.save(dbPharmacy);
+
+  return res.status(StatusCodes.CREATED).json({
+    message:"Pharmacy Update Succesfully!",
+    obj:dbPharmacy,
+  });
+};
+
+// delete Pharmacy
+const deletePharmacy = async (req, res) => {
+  const { pharmacyId } = req.params
+
+  // validate Pharmacy
+    const dbPharmacy = await PharmacyService.findById(pharmacyId);
+    if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+
+  // delete pharmacy
+    await PharmacyService.findByIdAndDelete(dbPharmacy._id);
+
+  return res.status(StatusCodes.CREATED).json({
+    message:"Pharmacy Deleted Succesfully!",
+    obj:dbPharmacy,
+  });
+
+}
+
+module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation,updatePharmacy,deletePharmacy};

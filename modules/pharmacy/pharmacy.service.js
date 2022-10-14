@@ -9,6 +9,16 @@ const findById = async (id, session) => {
   return await Pharmacy.findById(id);
 };
 
+//delete Pharmacy
+const findByIdAndDelete = async (id, session) => {
+  return Pharmacy.findByIdAndDelete(id, {
+    session: session,
+    new: true,
+    runValidators: true,
+  });
+};
+
+//pagination
 const findAllPharmacyPagination = async (queryobj, pagableobj) => {
   const { page, limit, orderBy } = pagableobj;
 
@@ -31,4 +41,4 @@ const getAll = async () => {
   return await Pharmacy.find({});
 };
 
-module.exports = { save, findById, findAllPharmacyPagination, getAll };
+module.exports = { save, findById, findAllPharmacyPagination, getAll ,findByIdAndDelete};
