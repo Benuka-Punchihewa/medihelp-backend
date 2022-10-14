@@ -55,10 +55,47 @@ const getAllMedicines = async (queryObj, pagableObj) => {
   };
 };
 
+// pharmacy medicine bulk update
+const updateMany = async (queryObj, globalMedicine, session) => {
+  return Medicine.updateMany(
+    queryObj,
+    { $set: { "global.doc": globalMedicine } },
+    { session: session, new: true, runValidators: true }
+  );
+};
+
+const findByIdAndDelete = async (id, session) => {
+  return Medicine.findByIdAndDelete(id, {
+    session: session,
+    new: true,
+    runValidators: true,
+  });
+};
+
+const findOneByGlobalMedicine = async (globalMedicineId, session) => {
+  if (session)
+    return await Medicine.findOne({
+      "global._id": globalMedicineId,
+    }).session(session);
+  return await Medicine.findOne({
+    "global._id": globalMedicineId,
+  });
+};
+
+//delete medicine
+const deleteOne = async (id, session) => {
+  if (session) return await Medicine.deleteOne(id).session(session);
+  return await Medicine.deleteOne(id);
+};
+
 module.exports = {
   save,
   findMedicineByPharmacyId,
   findById,
   reduceStockLevels,
   getAllMedicines,
+  updateMany,
+  findOneByGlobalMedicine,
+  findByIdAndDelete,
+  deleteOne,
 };
