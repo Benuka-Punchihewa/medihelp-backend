@@ -79,4 +79,19 @@ router.patch(
   orderController.completeOrder
 );
 
+router.delete(
+  "/:orderId/remove",
+  authMiddleware.authorize([]),
+  orderController.hideOrder
+);
+
+router.get(
+  "/pharmacies/:pharmacyId/stats",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  orderController.getOrderStats
+);
+
 module.exports = router;

@@ -137,6 +137,10 @@ const OrderSchema = new mongoose.Schema(
         type: Number,
       },
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     versionKey: false,
