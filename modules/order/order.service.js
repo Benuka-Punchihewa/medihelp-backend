@@ -46,6 +46,30 @@ const findOrdersNoPagination = async (queryObj, session) => {
   return await Order.find(queryObj);
 };
 
+const findOrderCountByPharmacy = async () => {
+  return await Order.aggregate([
+    { $group: { _id: "$pharmacy._id", orders: { $push: "$_id" } } },
+    {
+      $lookup: {
+        from: "pharmacies",
+        localField: "_id",
+        foreignField: "_id",
+        as: "fromItems",
+      },
+    },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [{ $arrayElemAt: ["$fromItems", 0] }, "$$ROOT"],
+        },
+      },
+    },
+    {
+      $project: { _id: 1, name: 1, orderCount: { $size: "$orders" } },
+    },
+  ]);
+};
+
 module.exports = {
   save,
   findById,
@@ -54,4 +78,5 @@ module.exports = {
   getOrders: findOrders,
   findCount,
   findOrdersNoPagination,
+  findOrderCountByPharmacy,
 };
