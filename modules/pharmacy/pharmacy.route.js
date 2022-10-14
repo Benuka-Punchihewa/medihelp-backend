@@ -16,10 +16,6 @@ router.post(
 // get all pharmacy
 router.get(
 "/",
-authMiddleware.authorize([
-  constants.USER.ROLES.PHARMACY_OWNER,
-  constants.USER.ROLES.ADMIN,
-]),
 commonMiddleware.paginate,
 pharmacyController.findAllPharmacyPagination
 );
@@ -55,6 +51,7 @@ router.patch(
 router.delete(
   "/:pharmacyId",
   authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
     constants.USER.ROLES.ADMIN]),
   pharmacyController.deletePharmacy
 );
