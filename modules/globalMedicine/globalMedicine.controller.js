@@ -101,7 +101,7 @@ const deleteGlobalMedicine = async (req, res) => {
     throw new ConflictError("Global Medicine assigned to a pharmacy!");
 
   // delete global medicine
-  await GlobalMedicineService.deleteOne(dbGlobalMedicine);
+  await GlobalMedicineService.deleteOne(dbGlobalMedicine._id);
 
   // delete medicine docs
   await MedicineService.findByIdAndDelete(dbGlobalMedicine);

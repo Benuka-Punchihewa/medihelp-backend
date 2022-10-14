@@ -124,7 +124,6 @@ const updateMedicine = async (req, res) => {
 
   //validate medicines
   const dbMedicine = await MedicineService.findById(medicineId);
-
   if (!dbMedicine) throw new NotFoundError("Medicine not found!");
 
   // validate authority

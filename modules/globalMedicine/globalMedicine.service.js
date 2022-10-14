@@ -29,7 +29,8 @@ const getGlobalMedicines = async (queryObj, pagableObj) => {
 
 //delete
 const deleteOne = async (id, session) => {
-  if (session) return await GlobalMedicine.deleteOne(id).session(session);
+  if (session)
+    return await GlobalMedicine.deleteOne({ _id: id }).session(session);
   return await GlobalMedicine.deleteOne(id);
 };
 
