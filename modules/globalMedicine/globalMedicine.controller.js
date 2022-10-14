@@ -103,9 +103,6 @@ const deleteGlobalMedicine = async (req, res) => {
   // delete global medicine
   await GlobalMedicineService.deleteOne(dbGlobalMedicine._id);
 
-  // delete medicine docs
-  await MedicineService.findByIdAndDelete(dbGlobalMedicine);
-
   return res.status(StatusCodes.CREATED).json({
     message: "Global Medicine deleted successfully!",
     obj: dbGlobalMedicine,
