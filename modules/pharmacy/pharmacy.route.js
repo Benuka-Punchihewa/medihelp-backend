@@ -21,7 +21,27 @@ authMiddleware.authorize([
   constants.USER.ROLES.ADMIN,
 ]),
 commonMiddleware.paginate,
-pharmacyController.getallPharmacies
+pharmacyController.findAllPharmacyPagination
+);
+
+// get pharmacy id
+router.get(
+  "/:pharmacyId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  pharmacyController.getPharmacyById
+);
+
+
+
+//get nearest pharmacies
+router.get(
+  "/v/customer",
+  commonMiddleware.paginate,
+  pharmacyController.getPharmaciesByNearestLocation
 );
 
 module.exports = router;

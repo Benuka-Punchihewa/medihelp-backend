@@ -38,6 +38,11 @@ const OrderSchema = new mongoose.Schema(
         ref: "Pharmacy",
         required: [true, "Pharmacy ID is required!"],
       },
+      name: {
+        type: String,
+        // TODO: uncomment this
+        // required: [true, "Pharmacy name is required!"],
+      },
     },
     status: {
       type: String,
@@ -131,6 +136,10 @@ const OrderSchema = new mongoose.Schema(
       delivery: {
         type: Number,
       },
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
     },
   },
   {

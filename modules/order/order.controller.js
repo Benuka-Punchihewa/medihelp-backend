@@ -8,11 +8,12 @@ const OrderService = require("./order.service");
 const { startSession } = require("mongoose");
 const commonService = require("../common/common.service");
 const pharmacyUtil = require("../pharmacy/pharmacy.util");
-const commonUtil = require("../common/common.util");
+const CommonUtil = require("../common/common.util");
 const MedicineService = require("../medicine/medicine.service");
 const ConflictError = require("../error/error.classes/ConflictError");
 const GlobalMedicineService = require("../globalMedicine/globalMedicine.service");
 const InternalServerError = require("../error/error.classes/InternalServerError");
+const ForbiddenError = require("../error/error.classes/ForbiddenError");
 
 const createOrder = async (req, res) => {
   const { auth, stringifiedBody } = req.body;
@@ -38,6 +39,7 @@ const createOrder = async (req, res) => {
   order.payment.status = false;
   order.customer._id = auth._id;
   order.pharmacy._id = dbPharmacy._id;
+  order.pharmacy.name = dbPharmacy.name;
   order.status = constants.ORDER.STATUS.PENDING;
 
   // start mongoose default session
@@ -59,7 +61,7 @@ const createOrder = async (req, res) => {
     }_${orderCount + 1}`;
 
     // generate firebase storage url
-    order.prescriptionSheet = commonUtil.generateFirebaseStorageURL(order._id);
+    order.prescriptionSheet = CommonUtil.generateFirebaseStorageURL(order._id);
 
     // save order
     await OrderService.save(order, session);
@@ -80,7 +82,7 @@ const createOrder = async (req, res) => {
 
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: "Order created successfully!", obj: order });
+    .json({ message: "Order has been created successfully!", obj: order });
 };
 
 const getOrdersByPharmacy = async (req, res) => {
@@ -118,6 +120,8 @@ const approveOrder = async (req, res) => {
   if (!dbOrder) throw new NotFoundError("Order not found!");
   if (dbOrder.status !== constants.ORDER.STATUS.PENDING)
     throw new BadRequestError("Order is already approved!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new ConflictError("Order is rejected!");
 
   // validate pharmacy authority
   pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
@@ -234,7 +238,9 @@ const approveOrder = async (req, res) => {
   // construct body
   const order = new Order(dbOrder);
 
-  order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+  if (medicineTotalFee === 0) order.status = constants.ORDER.STATUS.CANCELLED;
+  else order.status = constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION;
+
   order.medicines = medicinesArr;
   order.payment.subtotal = medicineTotalFee.toFixed(2);
 
@@ -243,7 +249,7 @@ const approveOrder = async (req, res) => {
    */
   // get pharmacy
   const dbPharmacy = await PharmacyService.findById(dbOrder.pharmacy._id);
-  const crowDistance = commonUtil.getDistanceBetweenPoints(
+  const crowDistance = CommonUtil.getDistanceBetweenPoints(
     dbOrder.delivery.location.latitude,
     dbOrder.delivery.location.longitude,
     dbPharmacy.location.latitude,
@@ -293,8 +299,311 @@ const approveOrder = async (req, res) => {
   }
 
   return res
-    .status(StatusCodes.CREATED)
-    .json({ message: "Order approved successfully!", obj: order });
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been approved successfully!", obj: order });
 };
 
-module.exports = { createOrder, getOrdersByPharmacy, approveOrder };
+// for customers only
+const getOrdersByUserId = async (req, res) => {
+  const { pagable, auth } = req.body;
+  const { status } = req.query;
+
+  // prepare query object
+  const queryObj = {
+    "customer._id": auth._id,
+    $or: [{ isHidden: undefined }, { isHidden: false }],
+  };
+  queryObj.status = status;
+
+  const result = await OrderService.getOrders(queryObj, pagable);
+
+  return res.status(StatusCodes.OK).json(result);
+};
+
+// ONLY FOR CASH ON DELIVERY ORDERS
+const confirmOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Order is already confirmed!");
+  if (dbOrder.status === constants.ORDER.STATUS.PENDING)
+    throw new BadRequestError("Order has not been approved yet!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new BadRequestError("Cannot confirm rejected orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new BadRequestError("Cannot confirm completed orders!");
+
+  // validate authority
+  if (dbOrder.customer._id.toString() !== auth._id)
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  dbOrder.status = constants.ORDER.STATUS.CONFIRMED;
+  dbOrder.payment.method = constants.PAYMENT.METHODS.CASH_ON_DELIVERY;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been confirmed successfully!", dbOrder });
+};
+
+const rejectOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new ConflictError("Order is already rejected!");
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Cannot reject confirmed orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new BadRequestError("Cannot reject completed orders!");
+
+  if (dbOrder.status === constants.ORDER.STATUS.CONFIRMED)
+    throw new ConflictError("Cannot reject confirmed orders!");
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
+  if (
+    auth.role === constants.USER.ROLES.CUSTOMER &&
+    dbOrder.customer._id.toString() !== auth._id
+  )
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  // update db
+  dbOrder.status = constants.ORDER.STATUS.CANCELLED;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been rejected successfully!", dbOrder });
+};
+
+// For pharmacy owners
+const completeOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  // validate order status
+  if (dbOrder.status === constants.ORDER.STATUS.COMPLETED)
+    throw new ConflictError("Order is already completed!");
+  if (dbOrder.status === constants.ORDER.STATUS.PENDING)
+    throw new BadRequestError("Cannot complete rejected orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION)
+    throw new BadRequestError("Cannot complete unapproved orders!");
+  if (dbOrder.status === constants.ORDER.STATUS.CANCELLED)
+    throw new BadRequestError("Cannot complete rejected orders!");
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, dbOrder.pharmacy._id.toString());
+
+  // update db
+  dbOrder.status = constants.ORDER.STATUS.COMPLETED;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been completed successfully!", dbOrder });
+};
+
+// FOR CUSTOMERS ONLY - To remove cancelled or completed orders
+const hideOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { auth } = req.body;
+
+  // validate order
+  const dbOrder = await OrderService.findById(orderId);
+  if (!dbOrder) throw new NotFoundError("Order Not Found!");
+
+  if (
+    auth.role === constants.USER.ROLES.CUSTOMER &&
+    dbOrder.customer._id.toString() !== auth._id
+  )
+    throw new ForbiddenError(`You're not permitted to access this resouce!`);
+
+  if (
+    dbOrder.status !== constants.ORDER.STATUS.CANCELLED &&
+    dbOrder.status !== constants.ORDER.STATUS.COMPLETED
+  )
+    throw new BadRequestError(
+      "You can only remove cancelled or completed orders!"
+    );
+
+  // update db
+  dbOrder.isHidden = true;
+  await OrderService.save(dbOrder);
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "Order has been removed successfully!", dbOrder });
+};
+
+const getOrderStats = async (req, res) => {
+  const { pharmacyId } = req.params;
+  const { auth } = req.body;
+
+  // validate pharmacy
+  const dbPharamacy = PharmacyService.findById(pharmacyId);
+  if (!dbPharamacy) throw new NotFoundError(pharmacyId);
+
+  // validate pharmacy authority
+  pharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
+
+  // calulate weekly salaries
+  const dailyOrders = [];
+  let day = 7;
+  for (let i = 0; i < 7; i++) {
+    const today = new Date(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Colombo",
+      })
+    );
+
+    const targetDay = new Date(today.setDate(today.getDate() - i));
+    const targetDayISOString =
+      targetDay.getFullYear() +
+      "-" +
+      CommonUtil.addLeadingZeros(targetDay.getMonth() + 1, 2) +
+      "-" +
+      CommonUtil.addLeadingZeros(targetDay.getDate(), 2) +
+      "T00:00:00.000+05:30";
+
+    const dayAfter = new Date(targetDay.setDate(targetDay.getDate() + 1));
+    const dayAfterISOString =
+      dayAfter.getFullYear() +
+      "-" +
+      CommonUtil.addLeadingZeros(dayAfter.getMonth() + 1, 2) +
+      "-" +
+      CommonUtil.addLeadingZeros(dayAfter.getDate(), 2) +
+      "T00:00:00.000+05:30";
+
+    const dailyOrderCount = await OrderService.findCount({
+      $and: [
+        { "pharmacy._id": pharmacyId },
+        { createdAt: { $gt: targetDayISOString } },
+        { createdAt: { $lte: dayAfterISOString } },
+      ],
+    });
+
+    dailyOrders.push({
+      index: day,
+      day: constants.DAYS[new Date(targetDay).getUTCDay()],
+      orderCount: dailyOrderCount,
+    });
+    day--;
+  }
+
+  const today = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Colombo",
+    })
+  );
+  const before7Days = new Date(today.setDate(today.getDate() - 7));
+  const before7DaysISOString =
+    before7Days.getFullYear() +
+    "-" +
+    CommonUtil.addLeadingZeros(before7Days.getMonth() + 1, 2) +
+    "-" +
+    CommonUtil.addLeadingZeros(before7Days.getDate(), 2) +
+    "T00:00:00.000+05:30";
+
+  // weekly data
+  const [
+    successfulOrders,
+    pendingOrders,
+    confirmedOrders,
+    completedOrders,
+    cancelledOrders,
+  ] = await Promise.all([
+    // get completed list of orders in last 7 days
+    OrderService.findOrdersNoPagination({
+      $and: [
+        { "pharmacy._id": pharmacyId },
+        { createdAt: { $gte: before7DaysISOString } },
+        { status: constants.ORDER.STATUS.COMPLETED },
+      ],
+    }),
+    // get pending order count in last 7 days
+    OrderService.findCount({
+      $and: [
+        {
+          $or: [
+            { status: constants.ORDER.STATUS.PENDING },
+            { status: constants.ORDER.STATUS.REQUIRES_CUSTOMER_CONFIRMATION },
+          ],
+        },
+        {
+          createdAt: { $gte: before7DaysISOString },
+        },
+      ],
+    }),
+    // get confirmed order count in last 7 days
+    OrderService.findCount({
+      $and: [
+        { status: constants.ORDER.STATUS.CONFIRMED },
+        {
+          createdAt: { $gte: before7DaysISOString },
+        },
+      ],
+    }),
+    // get completed order count in last 7 days
+    OrderService.findCount({
+      $and: [
+        { status: constants.ORDER.STATUS.COMPLETED },
+        {
+          createdAt: { $gte: before7DaysISOString },
+        },
+      ],
+    }),
+    // get cancelled order count in last 7 days
+    OrderService.findCount({
+      $and: [
+        { status: constants.ORDER.STATUS.CANCELLED },
+        {
+          createdAt: { $gte: before7DaysISOString },
+        },
+      ],
+    }),
+  ]);
+
+  // calculate weeky revenue in last 7 days
+  let weeklyRevenue = 0;
+  for (const order of successfulOrders) {
+    weeklyRevenue += order.payment.total;
+  }
+
+  return res.status(StatusCodes.OK).json({
+    summary: "Statistics of last 7 days",
+    dailyOrders,
+    weeklyRevenue,
+    pendingOrders,
+    confirmedOrders,
+    completedOrders,
+    cancelledOrders,
+  });
+};
+
+module.exports = {
+  createOrder,
+  getOrdersByPharmacy,
+  approveOrder,
+  getOrdersByUserId,
+  confirmOrder,
+  rejectOrder,
+  completeOrder,
+  hideOrder,
+  getOrderStats,
+};

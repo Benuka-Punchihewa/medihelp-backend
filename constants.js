@@ -23,6 +23,7 @@ const constants = {
       ONLINE: "online",
       CASH_ON_DELIVERY: "cash_on_delivery",
     },
+    PAYMENT_CURRENCY: "LKR",
   },
   MEDICINE: {
     TYPE: {
@@ -33,6 +34,20 @@ const constants = {
   DELIVERY: {
     CHARGE_PER_KM: 10,
   },
+  STRIPE_CHECKOUT_SESSION: {
+    PAYMENT_STATUS: {
+      PAID: "paid",
+    },
+  },
+  DAYS: [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ],
 };
 
 module.exports = constants;

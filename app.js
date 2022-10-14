@@ -14,12 +14,23 @@ const pharamacyRoutes = require("./modules/pharmacy/pharmacy.route");
 const orderRoutes = require("./modules/order/order.route");
 const globalMedicineRoutes = require("./modules/globalMedicine/globalMedicine.route");
 const medicineRoutes = require("./modules/medicine/medicine.route");
+const paymentRoutes = require("./modules/payment/payment.route");
 
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+// Use parsers only for non-webhook routes
+app.use((req, res, next) => {
+  if (
+    req.originalUrl === constants.API.PREFIX.concat("/payments/stripe-webhook")
+  ) {
+    next();
+  } else {
+    express.json()(req, res, next);
+    app.use(express.urlencoded({ extended: true }));
+  }
+});
 
 // define routes
 app.use(constants.API.PREFIX.concat("/users"), userRoutes);
@@ -28,6 +39,7 @@ app.use(constants.API.PREFIX.concat("/pharmacies"), pharamacyRoutes);
 app.use(constants.API.PREFIX.concat("/orders"), orderRoutes);
 app.use(constants.API.PREFIX.concat("/global-medicines"), globalMedicineRoutes);
 app.use(constants.API.PREFIX.concat("/medicines"), medicineRoutes);
+app.use(constants.API.PREFIX.concat("/payments"), paymentRoutes);
 
 // not found route
 app.use((req, res, next) => {

@@ -6,6 +6,9 @@ const NotFoundError = require("../error/error.classes/NotFoundError");
 const Pharmacy = require("./pharmacy.model");
 const PharmacyService = require("./pharmacy.service");
 const UserService = require("../user/user.service");
+const BadRequestError = require("../error/error.classes/BadRequestError");
+const PharmacyUtil = require("../pharmacy/pharmacy.util");
+const commonUtil = require("../common/common.util");
 
 const createPharmacy = async (req, res) => {
   const { auth } = req.body;
@@ -54,12 +57,44 @@ const createPharmacy = async (req, res) => {
     .json({ message: "Pharmacy created successfully!", obj: pharmacy });
 };
 
-const getallPharmacies = async (req, res) => {
+const findAllPharmacyPagination = async (req, res) => {
   const { pagable } = req.body;
 
-  const result = await PharmacyService.getAllPagination({}, pagable);
+  const result = await PharmacyService.findAllPharmacyPagination({}, pagable);
 
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createPharmacy, getallPharmacies };
+//get pharmacy by id
+const getPharmacyById = async (req, res) => {
+  const { pharmacyId } = req.params;
+
+  const dbPharamacy = await PharmacyService.findById (pharmacyId);
+
+  return res.status(StatusCodes.OK).json(dbPharamacy);
+};
+
+
+//get nearest pharmacy
+const getPharmaciesByNearestLocation = async (req, res) => {
+  const {keyword,lat,lng} = req.query;
+  const {pagable} = req.body;
+  
+  if(!lat || !lng )
+    throw new BadRequestError(
+      "Provide both longitudes and latitudes"
+    );
+
+  const nPharamacies = await PharmacyUtil.getPharmaciesSortedByNearestLocation(
+          lat,
+          lng
+  );
+
+  const filterednPharmacies = nPharamacies.filter(pharmacy => pharmacy.name.toLowerCase().includes(keyword.toLowerCase()))
+  
+  const result = commonUtil.arrPaginate(filterednPharmacies, pagable);
+  
+  return res.status(StatusCodes.OK).json(result);
+};
+    
+module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation};

@@ -31,9 +31,28 @@ const getDistanceBetweenPoints = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const arrPaginate = (array, pagable) => {
+  const { limit, page } = pagable;
+  const content = array.slice((page - 1) * limit, page * limit);
+
+  const totalElements = array.length;
+
+  return {
+    content,
+    totalElements,
+    totalPages: Math.ceil(totalElements / limit),
+  };
+};
+
+const addLeadingZeros = (number, length) => {
+  return String(number).padStart(length, "0");
+};
+
 module.exports = {
   capitalizeFirstLetter,
   generateFirebaseStorageURL,
   deg2rad,
   getDistanceBetweenPoints,
+  arrPaginate,
+  addLeadingZeros,
 };

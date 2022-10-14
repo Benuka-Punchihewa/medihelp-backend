@@ -39,4 +39,59 @@ router.patch(
   orderController.approveOrder
 );
 
+// get orders by user id - FOR CUSTOMERS ONLY
+router.get(
+  "/",
+  authMiddleware.authorize([]),
+  commonMiddleware.paginate,
+  orderController.getOrdersByUserId
+);
+
+// confirm order - FOR CUSTOMERS ONLY
+router.patch(
+  "/:orderId/confirm",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  orderController.confirmOrder
+);
+
+// reject order
+router.patch(
+  "/:orderId/reject",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.CUSTOMER,
+  ]),
+  orderController.rejectOrder
+);
+
+// complete order
+router.patch(
+  "/:orderId/complete",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  orderController.completeOrder
+);
+
+router.delete(
+  "/:orderId/remove",
+  authMiddleware.authorize([]),
+  orderController.hideOrder
+);
+
+router.get(
+  "/pharmacies/:pharmacyId/stats",
+  authMiddleware.authorize([
+    constants.USER.ROLES.PHARMACY_OWNER,
+    constants.USER.ROLES.ADMIN,
+  ]),
+  orderController.getOrderStats
+);
+
 module.exports = router;

@@ -1,3 +1,4 @@
+const constants = require("../../constants");
 const Order = require("./order.model");
 
 const save = async (order, session) => {
@@ -9,7 +10,7 @@ const findById = async (id, session) => {
   return await Order.findById(id);
 };
 
-const getOrderCountOfTheCurrentDayByPharamcy = async (pharmacyId, session) => {
+const findOrderCountOfTheCurrentDayByPharamcy = async (pharmacyId, session) => {
   const today = new Date().toISOString().split("T")[0] + "T00:00:00.000";
   return await Order.find(
     { "pharamcy._id": pharmacyId, createdAt: { $gte: today } },
@@ -17,13 +18,13 @@ const getOrderCountOfTheCurrentDayByPharamcy = async (pharmacyId, session) => {
   ).countDocuments();
 };
 
-const getOrders = async (queryObj, pagableObj) => {
+const findOrders = async (queryObj, pagableObj) => {
   const { page, limit, orderBy } = pagableObj;
 
   const content = await Order.find(queryObj)
     .limit(limit * 1)
     .skip((page - 1) * limit)
-    .sort({ createdAt: orderBy })
+    .sort({ updatedAt: orderBy })
     .exec();
 
   const totalElements = await Order.countDocuments(queryObj);
@@ -35,9 +36,22 @@ const getOrders = async (queryObj, pagableObj) => {
   };
 };
 
+const findCount = async (queryObj, session) => {
+  if (session) return await Order.countDocuments(queryObj).session(session);
+  return await Order.countDocuments(queryObj);
+};
+
+const findOrdersNoPagination = async (queryObj, session) => {
+  if (session) return await Order.find(queryObj).session(session);
+  return await Order.find(queryObj);
+};
+
 module.exports = {
   save,
   findById,
-  getOrderCountOfTheCurrentDayByPharamcy,
-  getOrders,
+  getOrderCountOfTheCurrentDayByPharamcy:
+    findOrderCountOfTheCurrentDayByPharamcy,
+  getOrders: findOrders,
+  findCount,
+  findOrdersNoPagination,
 };
