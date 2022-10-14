@@ -6,7 +6,7 @@ const commonMiddleware = require("../common/common.middleware");
 
 const globalMedicineController = require("./globalMedicine.controller");
 
-// create order
+// create medicine
 router.post(
   "/",
   authMiddleware.authorize([constants.USER.ROLES.ADMIN]),
@@ -23,6 +23,20 @@ router.get(
   ]),
   commonMiddleware.paginate,
   globalMedicineController.getGlobalMedicines
+);
+
+// update global medicines
+router.patch(
+  "/:globalMedicineId",
+  authMiddleware.authorize([constants.USER.ROLES.ADMIN]),
+  globalMedicineController.updateGlobalMedicine
+);
+
+//delete
+router.delete(
+  "/:globalMedicineId",
+  authMiddleware.authorize([constants.USER.ROLES.ADMIN]),
+  globalMedicineController.deleteGlobalMedicine
 );
 
 module.exports = router;

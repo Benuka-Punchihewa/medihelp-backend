@@ -27,4 +27,11 @@ const getGlobalMedicines = async (queryObj, pagableObj) => {
   };
 };
 
-module.exports = { save, findById, getGlobalMedicines };
+//delete
+const deleteOne = async (id, session) => {
+  if (session)
+    return await GlobalMedicine.deleteOne({ _id: id }).session(session);
+  return await GlobalMedicine.deleteOne(id);
+};
+
+module.exports = { save, findById, getGlobalMedicines, deleteOne };

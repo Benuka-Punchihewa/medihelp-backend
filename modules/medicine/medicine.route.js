@@ -36,4 +36,24 @@ router.get(
   medicineController.getMedicineByGId
 );
 
+//update
+router.patch(
+  "/:medicineId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.PHARMACY_OWNER,
+  ]),
+  medicineController.updateMedicine
+);
+
+//delete
+router.delete(
+  "/:medicineId",
+  authMiddleware.authorize([
+    constants.USER.ROLES.ADMIN,
+    constants.USER.ROLES.PHARMACY_OWNER,
+  ]),
+  medicineController.deleteMedicine
+);
+
 module.exports = router;

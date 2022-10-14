@@ -26,7 +26,10 @@ const createMedicine = async (req, res) => {
     if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
 
     // validate authority
-    PharmacyUtil.validatePharmacyAuthority(req.body.auth, dbPharmacy._id);
+    PharmacyUtil.validatePharmacyAuthority(
+      req.body.auth,
+      dbPharmacy._id.toString()
+    );
 
     // validate global medicine
     const dbGlobalMedicine = await GlobalMedicineService.findById(
@@ -107,11 +110,67 @@ const getAllMedicines = async (req, res) => {
   PharmacyUtil.validatePharmacyAuthority(auth, pharmacyId);
 
   const queryObj = { "pharmacy._id": pharmacyId };
-  if (keyword) queryObj._id = { $regex: keyword, $options: "i" };
+  if (keyword) queryObj["global.doc.name"] = { $regex: keyword, $options: "i" };
 
   const result = await MedicineService.getAllMedicines(queryObj, pagable);
 
   return res.status(StatusCodes.OK).json(result);
 };
 
-module.exports = { createMedicine, getAllMedicines, getMedicineByGId };
+//update
+const updateMedicine = async (req, res) => {
+  const { medicineId } = req.params;
+  const { stockLevel, unitPrice } = req.body;
+
+  //validate medicines
+  const dbMedicine = await MedicineService.findById(medicineId);
+  if (!dbMedicine) throw new NotFoundError("Medicine not found!");
+
+  // validate authority
+  PharmacyUtil.validatePharmacyAuthority(
+    req.body.auth,
+    dbMedicine.pharmacy._id.toString()
+  );
+
+  if (stockLevel) dbMedicine.stockLevel = stockLevel;
+  if (unitPrice) dbMedicine.unitPrice = unitPrice;
+
+  // update global medicine
+  await GlobalMedicineService.save(dbMedicine, session);
+
+  return res.status(StatusCodes.CREATED).json({
+    message: "Medicine updated successfully!",
+    obj: dbMedicine,
+  });
+};
+
+//delete
+const deleteMedicine = async (req, res) => {
+  const { medicineId } = req.params;
+
+  // validate global medicines
+  const dbMedicine = await MedicineService.findById(medicineId);
+  if (!dbMedicine) throw new NotFoundError("Medicine not found!");
+
+  // validate authority
+  PharmacyUtil.validatePharmacyAuthority(
+    req.body.auth,
+    dbMedicine.pharmacy._id.toString()
+  );
+
+  // delete medicine
+  await MedicineService.findByIdAndDelete(dbMedicine._id);
+
+  return res.status(StatusCodes.CREATED).json({
+    message: "Medicine deleted successfully!",
+    obj: dbMedicine,
+  });
+};
+
+module.exports = {
+  createMedicine,
+  getAllMedicines,
+  getMedicineByGId,
+  updateMedicine,
+  deleteMedicine,
+};
