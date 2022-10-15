@@ -89,16 +89,17 @@ const getPharmaciesByNearestLocation = async (req, res) => {
   if (!lat || !lng)
     throw new BadRequestError("Provide both longitudes and latitudes");
 
-  const nPharamacies = await PharmacyUtil.getPharmaciesSortedByNearestLocation(
+  let nPharamacies = await PharmacyUtil.getPharmaciesSortedByNearestLocation(
     lat,
     lng
   );
 
-  const filterednPharmacies = nPharamacies.filter((pharmacy) =>
-    pharmacy.name.toLowerCase().includes(keyword.toLowerCase())
-  );
+  if (keyword)
+    nPharamacies = nPharamacies.filter((pharmacy) =>
+      pharmacy.name.toLowerCase().includes(keyword.toLowerCase())
+    );
 
-  const result = commonUtil.arrPaginate(filterednPharmacies, pagable);
+  const result = commonUtil.arrPaginate(nPharamacies, pagable);
 
   return res.status(StatusCodes.OK).json(result);
 };
