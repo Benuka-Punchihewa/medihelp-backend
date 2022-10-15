@@ -59,8 +59,15 @@ const createPharmacy = async (req, res) => {
 
 const findAllPharmacyPagination = async (req, res) => {
   const { pagable } = req.body;
+  const { keyword } = req.query;
 
-  const result = await PharmacyService.findAllPharmacyPagination({}, pagable);
+  const queryObj = {};
+  if (keyword) queryObj.name = { $regex: keyword, $options: "i" };
+
+  const result = await PharmacyService.findAllPharmacyPagination(
+    queryObj,
+    pagable
+  );
 
   return res.status(StatusCodes.OK).json(result);
 };
@@ -69,45 +76,41 @@ const findAllPharmacyPagination = async (req, res) => {
 const getPharmacyById = async (req, res) => {
   const { pharmacyId } = req.params;
 
-  const dbPharamacy = await PharmacyService.findById (pharmacyId);
+  const dbPharamacy = await PharmacyService.findById(pharmacyId);
 
   return res.status(StatusCodes.OK).json(dbPharamacy);
 };
 
-
 //get nearest pharmacy
 const getPharmaciesByNearestLocation = async (req, res) => {
-  const {keyword,lat,lng} = req.query;
-  const {pagable} = req.body;
-  
-  if(!lat || !lng )
-    throw new BadRequestError(
-      "Provide both longitudes and latitudes"
-    );
+  const { keyword, lat, lng } = req.query;
+  const { pagable } = req.body;
+
+  if (!lat || !lng)
+    throw new BadRequestError("Provide both longitudes and latitudes");
 
   const nPharamacies = await PharmacyUtil.getPharmaciesSortedByNearestLocation(
-          lat,
-          lng
+    lat,
+    lng
   );
 
-  const filterednPharmacies = nPharamacies.filter(pharmacy => pharmacy.name.toLowerCase().includes(keyword.toLowerCase()))
-  
+  const filterednPharmacies = nPharamacies.filter((pharmacy) =>
+    pharmacy.name.toLowerCase().includes(keyword.toLowerCase())
+  );
+
   const result = commonUtil.arrPaginate(filterednPharmacies, pagable);
-  
+
   return res.status(StatusCodes.OK).json(result);
 };
-   
 
 // update a pharmacy
-const updatePharmacy = async(req, res) => {
-  const { pharmacyId } = req.params
+const updatePharmacy = async (req, res) => {
+  const { pharmacyId } = req.params;
   const { name, registrationNumber, address, contactNumber, email } = req.body;
-  
-  const dbPharmacy = await PharmacyService.findById(
-    pharmacyId
-  );
 
-  if(!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+  const dbPharmacy = await PharmacyService.findById(pharmacyId);
+
+  if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
 
   if (name) dbPharmacy.name = name;
   if (registrationNumber) dbPharmacy.registrationNumber = registrationNumber;
@@ -115,31 +118,37 @@ const updatePharmacy = async(req, res) => {
   if (contactNumber) dbPharmacy.contactNumber = contactNumber;
   if (email) dbPharmacy.email = email;
 
-     // update Pharmacy
-    await PharmacyService.save(dbPharmacy);
+  // update Pharmacy
+  await PharmacyService.save(dbPharmacy);
 
   return res.status(StatusCodes.CREATED).json({
-    message:"Pharmacy Update Succesfully!",
-    obj:dbPharmacy,
+    message: "Pharmacy Update Succesfully!",
+    obj: dbPharmacy,
   });
 };
 
 // delete Pharmacy
 const deletePharmacy = async (req, res) => {
-  const { pharmacyId } = req.params
+  const { pharmacyId } = req.params;
 
   // validate Pharmacy
-    const dbPharmacy = await PharmacyService.findById(pharmacyId);
-    if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
+  const dbPharmacy = await PharmacyService.findById(pharmacyId);
+  if (!dbPharmacy) throw new NotFoundError("Pharmacy not found!");
 
   // delete pharmacy
-    await PharmacyService.findByIdAndDelete(dbPharmacy._id);
+  await PharmacyService.findByIdAndDelete(dbPharmacy._id);
 
   return res.status(StatusCodes.CREATED).json({
-    message:"Pharmacy Deleted Succesfully!",
-    obj:dbPharmacy,
+    message: "Pharmacy Deleted Succesfully!",
+    obj: dbPharmacy,
   });
+};
 
-}
-
-module.exports = { createPharmacy, findAllPharmacyPagination, getPharmacyById,getPharmaciesByNearestLocation,updatePharmacy,deletePharmacy};
+module.exports = {
+  createPharmacy,
+  findAllPharmacyPagination,
+  getPharmacyById,
+  getPharmaciesByNearestLocation,
+  updatePharmacy,
+  deletePharmacy,
+};

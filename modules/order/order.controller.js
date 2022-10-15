@@ -539,6 +539,7 @@ const getOrderStats = async (req, res) => {
     // get pending order count in last 7 days
     OrderService.findCount({
       $and: [
+        { "pharmacy._id": pharmacyId },
         {
           $or: [
             { status: constants.ORDER.STATUS.PENDING },
@@ -553,6 +554,7 @@ const getOrderStats = async (req, res) => {
     // get confirmed order count in last 7 days
     OrderService.findCount({
       $and: [
+        { "pharmacy._id": pharmacyId },
         { status: constants.ORDER.STATUS.CONFIRMED },
         {
           createdAt: { $gte: before7DaysISOString },
@@ -562,6 +564,7 @@ const getOrderStats = async (req, res) => {
     // get completed order count in last 7 days
     OrderService.findCount({
       $and: [
+        { "pharmacy._id": pharmacyId },
         { status: constants.ORDER.STATUS.COMPLETED },
         {
           createdAt: { $gte: before7DaysISOString },
@@ -571,6 +574,7 @@ const getOrderStats = async (req, res) => {
     // get cancelled order count in last 7 days
     OrderService.findCount({
       $and: [
+        { "pharmacy._id": pharmacyId },
         { status: constants.ORDER.STATUS.CANCELLED },
         {
           createdAt: { $gte: before7DaysISOString },
